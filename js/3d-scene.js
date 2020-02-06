@@ -5,7 +5,7 @@ import { EffectComposer } from '../js/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '../js/jsm/postprocessing/RenderPass.js';
 
 let container;
-let camera, scene, renderer, ambientLight, pointLight, composer, light;
+let camera, scene, renderer, ambientLight, pointLight, composer;
 let mX, mY;
 let mixer;
 let mouseX = 0;
@@ -14,9 +14,10 @@ let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
 let targetX = 0;
 let targetY = 0;
-let camY = 50;
 let tweenPos, tweenRot;
+let lastScrollTop = 0;
 let actualPos = 0;
+let lookAt = { x: 0, y:110, z:85 };
 const duration = 2000;
 const camPositions = [
     {x:450 , y:150,  z:209},
@@ -39,9 +40,8 @@ function init() {
     const loadingManager = new THREE.LoadingManager( () => {
 
         const loadingScreen = document.getElementById( 'loading-screen' );
+        $('#sections-container').show();
         loadingScreen.classList.add( 'fade-out' );
-
-        // optional: remove loader from DOM via event listener
         loadingScreen.addEventListener( 'transitionend', onTransitionEnd );
 
     } );
@@ -51,7 +51,7 @@ function init() {
 
     camera = new THREE.PerspectiveCamera( 34, window.innerWidth / window.innerHeight, 1, 10000 );
     camera.position.set( camPositions[0].x, camPositions[0].y, camPositions[0].z);
-    camera.lookAt( 0, 110, 85 );
+    camera.lookAt( lookAt.x, lookAt.y, lookAt.z );
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0x000000 );
@@ -62,11 +62,6 @@ function init() {
 
     pointLight = new THREE.PointLight( 0xffffff, 20, 5000 );
     pointLight.position.set( 200, 200, 200 );
-    /*pointLight.castShadow = true;
-    pointLight.shadow.camera.top = 180;
-    pointLight.shadow.camera.bottom = - 100;
-    pointLight.shadow.camera.left = - 120;
-    pointLight.shadow.camera.right = 120;*/
     scene.add( pointLight );
 
     // main materials
@@ -189,14 +184,13 @@ function init() {
 
     let idleAnim;
     let loaderCharacter = new FBXLoader(loadingManager);
-    let group = new THREE.Group();
 
     loaderCharacter.load( assetsRoot + 'character.fbx', function ( object ) {
 
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
-                console.log(child.name);
+                //console.log(child.name);
                 //child.castShadow = true;
                 child.receiveShadow = true;
                 if(child.name === 'Body' || child.name === 'Eyes' || child.name === 'Eyelashes') {
@@ -208,7 +202,7 @@ function init() {
                 if(child.name === 'Shoes') child.material = shoesMat;
             }
             if (child.isBone) {
-                console.log(child.name);
+                //console.log(child.name);
                 if (child.name === 'mixamorig_Head') {
                     neck = child;
                 }
@@ -229,7 +223,7 @@ function init() {
         idleAnim.tracks.splice(30, 3);
         //idleAnim.tracks.splice(4, 1);
         let action = mixer.clipAction(idleAnim);
-        console.log(idleAnim);
+        //console.log(idleAnim);
         action.play();
 
         scene.add( object );
@@ -398,7 +392,19 @@ function init() {
 
     window.addEventListener( 'resize', onWindowResize, false );
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    document.addEventListener("wheel", updateCamera);
+    //document.addEventListener("scroll", updateCamera);
+
+    $(window).scroll(function(event){
+        let st = $(this).scrollTop();
+        if (st > lastScrollTop){
+            // downscroll code
+            updateCamera('down');
+        } else {
+            updateCamera('up');
+        }
+        lastScrollTop = st;
+    });
+
     document.addEventListener('keydown', (e) => {
         if(!inTransition){
             if(e.key === "f") transitionCam();
@@ -418,26 +424,51 @@ function onDocumentMouseMove( event ) {
     mX = event.clientX;
     mY = event.clientY;
 
-    moveJoint(neck, 50);
-    //moveJoint(waist, 30);
+    moveJoint(neck, 30);
 }
 
 function onWindowResize() {
 
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
     renderer.setSize( window.innerWidth, window.innerHeight );
 
 }
 
-function updateCamera(e){
-    console.log(camY);
+let initMoveZDistance = 200;
+let initMoveYDistance = 100;
+let initLookAtZDistance = 50;
+function updateCamera(move){
+    //console.log(move);
+    let maxYScrollScene_a = window.innerHeight / 2;
+    let newPosZ;
+    let newPosY;
+    let newLookAtZ;
+    console.log(window.scrollY);
+
+    if(move === "up" && window.scrollY === 0){
+        // hack jquery
+    }else{
+        if(window.scrollY < maxYScrollScene_a){
+            newPosZ = camPositions[0].z - (window.scrollY * initMoveZDistance)/maxYScrollScene_a;
+            newPosY = camPositions[0].y - (window.scrollY * initMoveYDistance)/maxYScrollScene_a;
+            newLookAtZ = lookAt.z + (window.scrollY * initLookAtZDistance)/maxYScrollScene_a;
+
+            camera.position.z = newPosZ;
+            camera.position.y = newPosY;
+            camera.lookAt( lookAt.x, lookAt.y, newLookAtZ );
+        }
+    }
+
+
+
+    /*
     if(e.deltaY === -100){
         camY += 1;
     }else{
         camY -= 1;
     }
+    */
 }
 
 function animate() {
@@ -463,12 +494,6 @@ function animate() {
         targetX = mouseX * .001;
         targetY = mouseY * .001;
 
-        /*
-        let element = document.getElementById("test");
-        element.style.top = parseInt(y) + 'px';
-        element.style.left = parseInt(x) + 'px';
-        */
-
         let delta = clock.getDelta();
         if ( mixer ) mixer.update( delta );
 
@@ -485,7 +510,7 @@ function animate() {
 }
 
 function transitionCam(){
-    console.log('tween');
+    //console.log('tween');
     if(actualPos === 0){
         tweenPos = new TWEEN.Tween( camera.position )
             .to( { x: camPositions[1].x, y: camPositions[1].y, z: camPositions[1].z }, duration )
@@ -514,7 +539,7 @@ function transitionCam(){
 }
 
 function tweenCompleted(){
-    console.log('tween completed');
+    //console.log('tween completed');
     TWEEN.removeAll();
     inTransition = false;
 }
@@ -537,7 +562,7 @@ function getMouseDegrees(x, y, degreeLimit) {
         ydiff,
         yPercentage;
 
-    x -= 600;
+    x -= 400;
     y -= 300;
 
     let w = { x: window.innerWidth, y: window.innerHeight };
