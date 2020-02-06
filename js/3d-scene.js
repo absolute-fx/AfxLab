@@ -3,6 +3,7 @@ import { TWEEN } from '../js/jsm/libs/tween.module.min.js';
 import { FBXLoader } from '../js/jsm/loaders/FBXLoader.js';
 import { EffectComposer } from '../js/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '../js/jsm/postprocessing/RenderPass.js';
+import * as POSTPROCESSING from '../js/jsm/postprocessing/postprocessing.esm.js';
 
 let container;
 let camera, scene, renderer, ambientLight, pointLight, composer;
@@ -424,7 +425,7 @@ function onDocumentMouseMove( event ) {
     mX = event.clientX;
     mY = event.clientY;
 
-    moveJoint(neck, 30);
+    if ( neck ) moveJoint(neck, 30);
 }
 
 function onWindowResize() {
@@ -444,7 +445,7 @@ function updateCamera(move){
     let newPosZ;
     let newPosY;
     let newLookAtZ;
-    console.log(window.scrollY);
+    //console.log(window.scrollY);
 
     if(move === "up" && window.scrollY === 0){
         // hack jquery
