@@ -3,7 +3,8 @@ import { TWEEN } from '../js/jsm/libs/tween.module.min.js';
 import { FBXLoader } from '../js/jsm/loaders/FBXLoader.js';
 import { EffectComposer } from '../js/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '../js/jsm/postprocessing/RenderPass.js';
-import * as POSTPROCESSING from '../js/jsm/postprocessing/postprocessing.esm.js';
+import {FilmPass} from "../three.js-master/examples/jsm/postprocessing/FilmPass.js";
+import {EffectPass} from "./jsm/postprocessing/postprocessing.esm";
 
 let container;
 let camera, scene, renderer, ambientLight, pointLight, composer;
@@ -413,7 +414,18 @@ function init() {
     });
 
     composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass( scene, camera ));
+    const renderPass = new RenderPass( scene, camera );
+    const effectPass = new EffectPass();
+    const filmPass = new FilmPass(
+        0.35,   // noise intensity
+        0.025,  // scanline intensity
+        648,    // scanline count
+        false,  // grayscale
+    );
+
+
+    composer.addPass(renderPass);
+    composer.addPass(renderPass);
 
     animate();
 }
