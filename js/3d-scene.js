@@ -3,10 +3,11 @@ import { TWEEN } from '../js/jsm/libs/tween.module.min.js';
 import { FBXLoader } from '../js/jsm/loaders/FBXLoader.js';
 import { EffectComposer } from '../js/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '../js/jsm/postprocessing/RenderPass.js';
-import {FilmPass} from "../three.js-master/examples/jsm/postprocessing/FilmPass.js";
-import {EffectPass} from "./jsm/postprocessing/postprocessing.esm";
+import { GUI } from '../js/jsm/libs/dat.gui.module.js';
+
 
 let container;
+let loadingManager;
 let camera, scene, renderer, ambientLight, pointLight, composer;
 let mX, mY;
 let mixer;
@@ -16,6 +17,7 @@ let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
 let targetX = 0;
 let targetY = 0;
+let mainEnv;
 let tweenPos, tweenRot;
 let lastScrollTop = 0;
 let actualPos = 0;
@@ -34,12 +36,33 @@ const idleSpeed = 0.003;
 const idleSensibility = 0.025;
 let idleStore = 0;
 let neck, waist;
+
+//
+let gui,
+    guiWhitePoint = null,
+    guiExposure = null;
+
+let params = {
+    exposure: 0.8,
+    whitePoint: 1.0, // applies to Uncharted2 only
+    toneMapping: 'ACESFilmic'
+};
+
+let toneMappingOptions = {
+    None: THREE.NoToneMapping,
+    Linear: THREE.LinearToneMapping,
+    Reinhard: THREE.ReinhardToneMapping,
+    Uncharted2: THREE.Uncharted2ToneMapping,
+    Cineon: THREE.CineonToneMapping,
+    ACESFilmic: THREE.ACESFilmicToneMapping
+};
+
 init();
 
 
 function init() {
 
-    const loadingManager = new THREE.LoadingManager( () => {
+    loadingManager = new THREE.LoadingManager( () => {
 
         const loadingScreen = document.getElementById( 'loading-screen' );
         $('#sections-container').show();
@@ -62,6 +85,8 @@ function init() {
     ambientLight.intensity = 0.7;
     scene.add( ambientLight );
 
+    var light = new THREE.HemisphereLight( 0xffffff, 0x080820, 1 ); scene.add( light );
+
     pointLight = new THREE.PointLight( 0xffffff, 20, 5000 );
     pointLight.position.set( 200, 200, 200 );
     scene.add( pointLight );
@@ -69,13 +94,59 @@ function init() {
     // main materials
     let mainLoaderEnv = new THREE.CubeTextureLoader();
     mainLoaderEnv.setPath(assetsRoot);
-    let mainEnv = mainLoaderEnv.load([
+    mainEnv = mainLoaderEnv.load([
         'px.png', 'nx.png',
         'py.png', 'ny.png',
         'pz.png', 'nz.png'
     ]);
     mainEnv.encoding = THREE.sRGBEncoding;
 
+    setScene_1();
+
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.physicallyCorrectLights = true;
+
+    renderer.outputEncoding = THREE.sRGBEncoding;
+
+    renderer.gammaInput = true;
+    renderer.gammaOutput = true;
+    renderer.shadowMap.enabled = true;
+    //renderer.shadowMap.bias = 0.0001;
+    //renderer.shadowMap.type = THREE.PCFShadowMap;
+    container.appendChild( renderer.domElement );
+
+    window.addEventListener( 'resize', onWindowResize, false );
+    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    //document.addEventListener("scroll", updateCamera);
+
+    $(window).scroll(function(event){
+        let st = $(this).scrollTop();
+        if (st > lastScrollTop){
+            // downscroll code
+            updateCamera('down');
+        } else {
+            updateCamera('up');
+        }
+        lastScrollTop = st;
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if(!inTransition){
+            if(e.key === "f") transitionCam();
+        }
+    });
+
+    composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass( scene, camera );
+    composer.addPass(renderPass);
+
+
+    animate();
+}
+
+function setScene_1(){
     // model room main
     let textureLoader = new THREE.TextureLoader();
     let diffuseMap = textureLoader.load( assetsRoot + 'room-main-diffuse.jpg' );
@@ -109,7 +180,7 @@ function init() {
 
     let bodyCharLoaderRough = new THREE.TextureLoader();
     let bodyCharRough = bodyCharLoaderRough.load(assetsRoot + 'perso_Body_gloss.png');
-    bodyCharRough.encoding = THREE.sRGBEncoding;
+    //bodyCharRough.encoding = THREE.sRGBEncoding;
 
 
     let bodyCharLoaderNormal = new THREE.TextureLoader();
@@ -377,57 +448,6 @@ function init() {
         } );
         scene.add( object );
     });
-
-
-
-
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.physicallyCorrectLights = true;
-    renderer.gammaInput = true;
-    renderer.gammaOutput = true;
-    renderer.shadowMap.enabled = true;
-    //renderer.shadowMap.bias = 0.0001;
-    //renderer.shadowMap.type = THREE.PCFShadowMap;
-    container.appendChild( renderer.domElement );
-
-    window.addEventListener( 'resize', onWindowResize, false );
-    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    //document.addEventListener("scroll", updateCamera);
-
-    $(window).scroll(function(event){
-        let st = $(this).scrollTop();
-        if (st > lastScrollTop){
-            // downscroll code
-            updateCamera('down');
-        } else {
-            updateCamera('up');
-        }
-        lastScrollTop = st;
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if(!inTransition){
-            if(e.key === "f") transitionCam();
-        }
-    });
-
-    composer = new EffectComposer(renderer);
-    const renderPass = new RenderPass( scene, camera );
-    const effectPass = new EffectPass();
-    const filmPass = new FilmPass(
-        0.35,   // noise intensity
-        0.025,  // scanline intensity
-        648,    // scanline count
-        false,  // grayscale
-    );
-
-
-    composer.addPass(renderPass);
-    composer.addPass(renderPass);
-
-    animate();
 }
 
 function onDocumentMouseMove( event ) {
@@ -612,3 +632,4 @@ function getMouseDegrees(x, y, degreeLimit) {
     }
     return { x: dx, y: dy };
 }
+

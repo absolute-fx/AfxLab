@@ -56,7 +56,17 @@ canvas {
     position: fixed;
     top:0;
     left:0;
-    z-index:-1;
+    z-index:-2;
+}
+
+#vignette{
+	position: fixed;
+	top:0;
+	left:0;
+	z-index:-1;
+	height: 100vh;
+	width: 100vw;
+	box-shadow: 0 0 500px rgba(0,0,0,1) inset;
 }
 
 #info {
