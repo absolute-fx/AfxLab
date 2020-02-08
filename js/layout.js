@@ -1,4 +1,5 @@
 $(document).ready(function(){
+    setNav();
     let headlineHeight = $('.home-headline').height() + 50;
     $('.home-headline').css({top: window.innerHeight - headlineHeight});
     //$('#loading-screen').height($(document).height());
@@ -8,18 +9,26 @@ $(document).ready(function(){
 });
 
 
+function setNav(){
+    $('.navbar-nav a').each(function () {
+        //$(this).removeClass('active');
+        $(this).click(function() {
+            let target = $(this).data('href');
+            navClickAction(target, this);
+        })
+    })
+}
 
-$("#about-btn").click(function() {
+function navClickAction(target, btn){
     $('html, body').animate({
-        scrollTop: $("#about").offset().top
-    }, 2000);
-});
+        scrollTop: $(target).offset().top
+    },2000);
 
-$("#home-btn").click(function() {
-    $('html, body').animate({
-        scrollTop: $("header").offset().top
-    }, 2000);
-});
+    $('.navbar-nav a').each(function () {
+        $(this).removeClass('active');
+    });
+    $(btn).addClass('active');
+}
 
 window.onresize = function(event) {
     let headlineHeight = $('.home-headline').height() + 50;

@@ -8,7 +8,7 @@ import { GUI } from '../js/jsm/libs/dat.gui.module.js';
 
 let container;
 let loadingManager;
-let camera, scene, renderer, ambientLight, pointLight, composer;
+let camera, scene, renderer, ambientLight, pointLight, scene_bLight, scene_bLight_2, scene_bLight_3, composer;
 let mX, mY;
 let mixer;
 let mouseX = 0;
@@ -17,11 +17,11 @@ let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
 let targetX = 0;
 let targetY = 0;
+let lookAtInit = { x: 0, y:110, z:85 };
 let mainEnv;
 let tweenPos, tweenRot;
 let lastScrollTop = 0;
 let actualPos = 0;
-let lookAt = { x: 0, y:110, z:85 };
 const duration = 2000;
 const camPositions = [
     {x:450 , y:150,  z:209},
@@ -36,21 +36,6 @@ const idleSpeed = 0.003;
 const idleSensibility = 0.025;
 let idleStore = 0;
 let neck, waist;
-
-let params = {
-    exposure: 0.8,
-    whitePoint: 1.0, // applies to Uncharted2 only
-    toneMapping: 'ACESFilmic'
-};
-
-let toneMappingOptions = {
-    None: THREE.NoToneMapping,
-    Linear: THREE.LinearToneMapping,
-    Reinhard: THREE.ReinhardToneMapping,
-    Uncharted2: THREE.Uncharted2ToneMapping,
-    Cineon: THREE.CineonToneMapping,
-    ACESFilmic: THREE.ACESFilmicToneMapping
-};
 
 init();
 
@@ -71,7 +56,7 @@ function init() {
 
     camera = new THREE.PerspectiveCamera( 34, window.innerWidth / window.innerHeight, 1, 10000 );
     camera.position.set( camPositions[0].x, camPositions[0].y, camPositions[0].z);
-    camera.lookAt( lookAt.x, lookAt.y, lookAt.z );
+    camera.lookAt( lookAtInit.x, lookAtInit.y, lookAtInit.z );
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0x000000 );
@@ -85,6 +70,18 @@ function init() {
     pointLight = new THREE.PointLight( 0xffffff, 20, 5000 );
     pointLight.position.set( 200, 200, 200 );
     scene.add( pointLight );
+
+    scene_bLight = new THREE.PointLight( 0xffffff, 20, 500 );
+    scene_bLight.position.set( 900, -150, -19.712 );
+    scene.add( scene_bLight );
+
+    scene_bLight_2 = new THREE.PointLight( 0xffffff, 20, 500 );
+    scene_bLight_2.position.set( 700, -200, -200 );
+    scene.add( scene_bLight_2 );
+
+    scene_bLight_3 = new THREE.PointLight( 0xffffff, 20, 500 );
+    scene_bLight_3.position.set( 800, -200, 500 );
+    scene.add( scene_bLight_3 );
 
     // main materials
     let mainLoaderEnv = new THREE.CubeTextureLoader();
@@ -126,6 +123,20 @@ function init() {
             updateCamera('up');
         }
         lastScrollTop = st;
+
+        const scrollPos = $(document).scrollTop();
+        $('.navbar-nav a').each(function () {
+            const currLink = $(this);
+            const refElement = $(currLink.data("href"));
+            if (refElement.position().top <= scrollPos && refElement.position().top + refElement.height() > scrollPos) {
+                $('.navbar-nav li a').removeClass("active");
+                currLink.addClass("active");
+            }
+            else{
+                currLink.removeClass("active");
+            }
+        });
+
     });
 
     document.addEventListener('keydown', (e) => {
@@ -448,9 +459,12 @@ function setScene_1(){
 
 function setScene_2(){
     let textureLoader = new THREE.TextureLoader();
-    let diffuseMap = textureLoader.load( assetsRoot + 'structure-01_base.jpg' );
+    let structure_Loader = new FBXLoader();
+    let diffuseMap;
 
-    textureLoader = new THREE.TextureLoader();
+    /*
+    diffuseMap = textureLoader.load( assetsRoot + 'structure-01_base.jpg' );
+
     let pbrMap = textureLoader.load( assetsRoot + 'structure-01_pbr.jpg' );
 
     textureLoader = new THREE.TextureLoader();
@@ -458,18 +472,18 @@ function setScene_2(){
 
 
     let structure_01Mat = new THREE.MeshPhysicalMaterial( {
-        color: 0x3d3d3d,
+        color: 0xff6f17,
         map: diffuseMap,
         roughness: 1,
         roughnessMap: pbrMap,
-        metalness:0.9,
+        metalness:1,
         metalnessMap: pbrMap,
         envMap: mainEnv,
         envMapIntensity: 1,
         normalMap: normalMap,
     } );
 
-    let structure_Loader = new FBXLoader();
+    structure_Loader = new FBXLoader();
     structure_Loader.load( assetsRoot + 'structure_01.fbx', function ( object ) {
 
         object.traverse( function ( child ) {
@@ -483,7 +497,7 @@ function setScene_2(){
         let bounding = new THREE.Box3().setFromObject(object);
         console.log(bounding.getSize().z);
         object.position.y = -176.936;
-        object.position.z = -198.334;
+        object.position.z = -227.482;
         object.position.x = 559.229;
 
         let structClone_01 = object.clone();
@@ -509,12 +523,12 @@ function setScene_2(){
     let structure_02Mat = new THREE.MeshPhysicalMaterial( {
         color: 0x3d3d3d,
         map: diffuseMap,
-        roughness: 1,
+        roughness: 0.5,
         roughnessMap: pbrMap,
-        metalness:0.9,
+        metalness:1,
         metalnessMap: pbrMap,
         envMap: mainEnv,
-        envMapIntensity: 1,
+        envMapIntensity: 1.5,
         normalMap: normalMap,
     } );
 
@@ -533,11 +547,13 @@ function setScene_2(){
         object.position.y = -110.245;
         object.position.z = -522.778;
 
-        //let structClone_01 = object.clone();
-        //structClone_01.position.z = 655;
+        let tube_02 = object.clone();
+        object.position.x = 559.229;
+        object.position.y = -110.245;
+        object.position.z = -16.218;
 
         scene.add( object );
-        //scene.add( structClone_01 );
+        scene.add( tube_02 );
 
     } );
 
@@ -568,15 +584,43 @@ function setScene_2(){
             }
 
         } );
+        object.position.x = 560.925;
         object.position.y = -108.73;
         object.position.z = -17.763;
-        object.position.x = 560.925;
 
-        //let structClone_01 = object.clone();
-        //structClone_01.position.z = 655;
+        let axe_01 = object.clone();
+        axe_01.position.x = 560.925;
+        axe_01.position.y = -108.73;
+        axe_01.position.z = 474.333;
+
+        let axe_02 = object.clone();
+        axe_02.position.x = 560.925;
+        axe_02.position.y = -108.73;
+        axe_02.position.z = -524.323;
 
         scene.add( object );
-        //scene.add( structClone_01 );
+        scene.add( axe_01 );
+
+    } );
+    */
+    diffuseMap = textureLoader.load( assetsRoot + 'room_02-base.jpg' );
+
+    let romm_02 = new THREE.MeshStandardMaterial( {
+        color: 0xff6f17,
+        map: diffuseMap
+    } );
+    structure_Loader.load( assetsRoot + 'room-02.fbx', function ( object ) {
+
+        object.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+                //child.material = romm_02;
+                //child.receiveShadow = true;
+            }
+
+        } );
+
+        scene.add( object );
 
     } );
 
@@ -603,8 +647,8 @@ function onWindowResize() {
 let a_distance = {x:0 , y:-100, z: -200};
 let a_LA_Distance = {x:0 , y:0, z: 50};
 
-let b_distance = {x:800 , y:-100, z: -200};
-let b_LA_Distance = {x:0 , y:100, z: 50};
+let b_distance = {x:600 , y:-100, z: -400};
+let b_LA_Distance = {x:560 , y:-360, z: -50};
 
 function updateCamera(move){
     //console.log(move);
@@ -618,6 +662,8 @@ function updateCamera(move){
     let newPosX;
     let newPosY;
     let newPosZ;
+    let newLookAtX;
+    let newLookAtY;
     let newLookAtZ;
     //console.log(window.scrollY);
 
@@ -628,11 +674,11 @@ function updateCamera(move){
             //console.log("A scope");
             newPosZ = camPositions[0].z + (window.scrollY * a_distance.z)/maxYScrollScene_a;
             newPosY = camPositions[0].y + (window.scrollY * a_distance.y)/maxYScrollScene_a;
-            newLookAtZ = lookAt.z + (window.scrollY * a_LA_Distance.z)/maxYScrollScene_a;
+            newLookAtZ = lookAtInit.z + (window.scrollY * a_LA_Distance.z)/maxYScrollScene_a;
 
             camera.position.z = newPosZ;
             camera.position.y = newPosY;
-            camera.lookAt( lookAt.x, lookAt.y, newLookAtZ );
+            camera.lookAt( lookAtInit.x, lookAtInit.y, newLookAtZ );
         }
         if(window.scrollY > startYScrollScene_b && window.scrollY < maxYScrollScene_b){
             //console.log("B scope");
@@ -640,8 +686,11 @@ function updateCamera(move){
             newPosX = camPositions[0].x + ((window.scrollY - startYScrollScene_b) * b_distance.x)/b_scrollPix;
             newPosZ = scopeB_pos.z + ((window.scrollY - startYScrollScene_b) * b_distance.z)/b_scrollPix;
             newPosY = scopeB_pos.y + ((window.scrollY - startYScrollScene_b) * b_distance.y)/b_scrollPix;
+            newLookAtX = (lookAtInit.x + a_LA_Distance.x)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.x)/b_scrollPix;
+            newLookAtY = (lookAtInit.y + a_LA_Distance.y)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.y)/b_scrollPix;
+            newLookAtZ = (lookAtInit.z + a_LA_Distance.z) + ((window.scrollY - startYScrollScene_b) * b_LA_Distance.z)/b_scrollPix;
+            camera.lookAt( newLookAtX, newLookAtY, newLookAtZ );
 
-            console.log("scopeBpos: " + scopeB_pos.z + " - newZ: " + (newPosZ));
             camera.position.x = newPosX;
             camera.position.y = newPosY;
             camera.position.z = newPosZ;
