@@ -37,11 +37,6 @@ const idleSensibility = 0.025;
 let idleStore = 0;
 let neck, waist;
 
-//
-let gui,
-    guiWhitePoint = null,
-    guiExposure = null;
-
 let params = {
     exposure: 0.8,
     whitePoint: 1.0, // applies to Uncharted2 only
@@ -102,6 +97,7 @@ function init() {
     mainEnv.encoding = THREE.sRGBEncoding;
 
     setScene_1();
+    setScene_2();
 
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
@@ -450,6 +446,142 @@ function setScene_1(){
     });
 }
 
+function setScene_2(){
+    let textureLoader = new THREE.TextureLoader();
+    let diffuseMap = textureLoader.load( assetsRoot + 'structure-01_base.jpg' );
+
+    textureLoader = new THREE.TextureLoader();
+    let pbrMap = textureLoader.load( assetsRoot + 'structure-01_pbr.jpg' );
+
+    textureLoader = new THREE.TextureLoader();
+    let normalMap = textureLoader.load( assetsRoot + 'structure_01_normal.jpg' );
+
+
+    let structure_01Mat = new THREE.MeshPhysicalMaterial( {
+        color: 0x3d3d3d,
+        map: diffuseMap,
+        roughness: 1,
+        roughnessMap: pbrMap,
+        metalness:0.9,
+        metalnessMap: pbrMap,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: normalMap,
+    } );
+
+    let structure_Loader = new FBXLoader();
+    structure_Loader.load( assetsRoot + 'structure_01.fbx', function ( object ) {
+
+        object.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+                child.material = structure_01Mat;
+                //child.receiveShadow = true;
+            }
+
+        } );
+        let bounding = new THREE.Box3().setFromObject(object);
+        console.log(bounding.getSize().z);
+        object.position.y = -176.936;
+        object.position.z = -198.334;
+        object.position.x = 559.229;
+
+        let structClone_01 = object.clone();
+        structClone_01.position.z = object.position.z + bounding.getSize().z - 5;
+        structClone_01.position.x = object.position.x;
+        structClone_01.position.y = object.position.y;
+
+        let structClone_02 = object.clone();
+        structClone_02.position.z = structClone_01.position.z + bounding.getSize().z - 5;
+        structClone_02.position.x = object.position.x;
+        structClone_02.position.y = object.position.y;
+
+        scene.add( object );
+        scene.add( structClone_01 );
+        scene.add( structClone_02 );
+
+    } );
+
+    diffuseMap = textureLoader.load( assetsRoot + 'structure-02_base.jpg' );
+    pbrMap = textureLoader.load( assetsRoot + 'structure-02_pbr.jpg' );
+    normalMap = textureLoader.load( assetsRoot + 'structure-02_normal.jpg' );
+
+    let structure_02Mat = new THREE.MeshPhysicalMaterial( {
+        color: 0x3d3d3d,
+        map: diffuseMap,
+        roughness: 1,
+        roughnessMap: pbrMap,
+        metalness:0.9,
+        metalnessMap: pbrMap,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: normalMap,
+    } );
+
+
+    structure_Loader.load( assetsRoot + 'structure_02.fbx', function ( object ) {
+
+        object.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+                child.material = structure_02Mat;
+                //child.receiveShadow = true;
+            }
+
+        } );
+        object.position.x = 559.229;
+        object.position.y = -110.245;
+        object.position.z = -522.778;
+
+        //let structClone_01 = object.clone();
+        //structClone_01.position.z = 655;
+
+        scene.add( object );
+        //scene.add( structClone_01 );
+
+    } );
+
+
+    diffuseMap = textureLoader.load( assetsRoot + 'structure-03_base.jpg' );
+    pbrMap = textureLoader.load( assetsRoot + 'structure-03_pbr.jpg' );
+    normalMap = textureLoader.load( assetsRoot + 'structure-03_normal.jpg' );
+
+    let structure_03Mat = new THREE.MeshPhysicalMaterial( {
+        color: 0x3d3d3d,
+        map: diffuseMap,
+        roughness: 1,
+        roughnessMap: pbrMap,
+        metalness:0.9,
+        metalnessMap: pbrMap,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: normalMap,
+    } );
+
+    structure_Loader.load( assetsRoot + 'structure_03.fbx', function ( object ) {
+
+        object.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+                child.material = structure_03Mat;
+                //child.receiveShadow = true;
+            }
+
+        } );
+        object.position.y = -108.73;
+        object.position.z = -17.763;
+        object.position.x = 560.925;
+
+        //let structClone_01 = object.clone();
+        //structClone_01.position.z = 655;
+
+        scene.add( object );
+        //scene.add( structClone_01 );
+
+    } );
+
+}
+
 function onDocumentMouseMove( event ) {
 
     mouseX = ( event.clientX - windowHalfX )/5;
@@ -468,14 +600,24 @@ function onWindowResize() {
 
 }
 
-let initMoveZDistance = 200;
-let initMoveYDistance = 100;
-let initLookAtZDistance = 50;
+let a_distance = {x:0 , y:-100, z: -200};
+let a_LA_Distance = {x:0 , y:0, z: 50};
+
+let b_distance = {x:800 , y:-100, z: -200};
+let b_LA_Distance = {x:0 , y:100, z: 50};
+
 function updateCamera(move){
     //console.log(move);
     let maxYScrollScene_a = window.innerHeight / 2;
-    let newPosZ;
+
+    let scopeB_pos = {x: camPositions[0].x, y: camPositions[0].y + a_distance.y, z: camPositions[0].z + a_distance.z};
+    let startYScrollScene_b = $("#launch").height() + $("#about").height();
+    let maxYScrollScene_b = startYScrollScene_b + $("#web-service").height();
+    let b_scrollPix = $("#web-service").height();
+
+    let newPosX;
     let newPosY;
+    let newPosZ;
     let newLookAtZ;
     //console.log(window.scrollY);
 
@@ -483,13 +625,26 @@ function updateCamera(move){
         // hack jquery
     }else{
         if(window.scrollY < maxYScrollScene_a){
-            newPosZ = camPositions[0].z - (window.scrollY * initMoveZDistance)/maxYScrollScene_a;
-            newPosY = camPositions[0].y - (window.scrollY * initMoveYDistance)/maxYScrollScene_a;
-            newLookAtZ = lookAt.z + (window.scrollY * initLookAtZDistance)/maxYScrollScene_a;
+            //console.log("A scope");
+            newPosZ = camPositions[0].z + (window.scrollY * a_distance.z)/maxYScrollScene_a;
+            newPosY = camPositions[0].y + (window.scrollY * a_distance.y)/maxYScrollScene_a;
+            newLookAtZ = lookAt.z + (window.scrollY * a_LA_Distance.z)/maxYScrollScene_a;
 
             camera.position.z = newPosZ;
             camera.position.y = newPosY;
             camera.lookAt( lookAt.x, lookAt.y, newLookAtZ );
+        }
+        if(window.scrollY > startYScrollScene_b && window.scrollY < maxYScrollScene_b){
+            //console.log("B scope");
+            //console.log(window.scrollY - startYScrollScene_b);
+            newPosX = camPositions[0].x + ((window.scrollY - startYScrollScene_b) * b_distance.x)/b_scrollPix;
+            newPosZ = scopeB_pos.z + ((window.scrollY - startYScrollScene_b) * b_distance.z)/b_scrollPix;
+            newPosY = scopeB_pos.y + ((window.scrollY - startYScrollScene_b) * b_distance.y)/b_scrollPix;
+
+            console.log("scopeBpos: " + scopeB_pos.z + " - newZ: " + (newPosZ));
+            camera.position.x = newPosX;
+            camera.position.y = newPosY;
+            camera.position.z = newPosZ;
         }
     }
 
@@ -532,6 +687,7 @@ function animate() {
 
         scene.rotation.y += idleSensibility * ( targetX - scene.rotation.y );
         scene.rotation.x += idleSensibility * ( targetY - scene.rotation.x );
+        //console.log(camera.position.z);
 
     }
     TWEEN.update();
