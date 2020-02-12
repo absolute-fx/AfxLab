@@ -1,9 +1,8 @@
 $(document).ready(function(){
     setNav();
+    //if($('#about').height() > window.innerHeight) $('#about').parent().height($('#about').height());
     let headlineHeight = $('.home-headline').height() + 50;
     $('.home-headline').css({top: window.innerHeight - headlineHeight});
-    //$('#loading-screen').height($(document).height());
-    //$("#about").css({marginTop: window.innerHeight});
     setheadlineAnim();
     setAboutAnim();
 });

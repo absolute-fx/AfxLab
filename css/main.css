@@ -217,8 +217,8 @@ a, button, input, select {
 	overflow: hidden;
 }
 .home-headline h1{
-	font-family: 'Anton', sans-serif;
-	font-size: 8em;
+	font-family: 'Anton', sans-serif!important;
+	font-size: 8em!important;
 }
 
 .home-headline h2{
@@ -237,6 +237,24 @@ a, button, input, select {
 	font-family: 'Julius Sans One', sans-serif;
 }
 
+section{
+	/*height: 100vh;*/
+}
+
+section h1{
+	font-family: 'Anton', sans-serif;
+	font-size: 4em;
+}
+
+section h2{
+	font-family: 'Anton', sans-serif;
+	font-size: 3em;
+}
+
+section h3{
+	font-family: 'Julius Sans One', sans-serif;
+}
+
 #launch{
 	position: relative;
 	overflow: hidden;
@@ -244,18 +262,16 @@ a, button, input, select {
 }
 
 #about{
-	height: 100vh;
+	/*height: 100vh;*/
 	padding-top: 25vh;
 }
 
-#about h2, #web-service h2{
-	font-family: 'Anton', sans-serif;
-	font-size: 4em;
+.team-list{
+	text-align: center;
 }
 
-#web-service{
-	height: 100vh;
-	padding-top: 25vh;
+.team-list{
+	margin-top: 20px;
 }
 
 .h-slider{
@@ -276,6 +292,30 @@ a, button, input, select {
 	font-family: 'Anton', sans-serif;
 	font-size: 30px;
 	display: block;
+	line-height: 40px;
+}
+
+#about-hdl-01 small{
+	font-size: 13px;
+	font-family: 'Julius Sans One', sans-serif;
+	display: block;
+	line-height: 20px;
+}
+
+#web-service{
+	height: 100vh;
+	padding-top: 25vh;
+}
+
+.web-hdl{
+	font-family: 'Julius Sans One', sans-serif;
+	font-size: 1.5em;
+}
+
+.web-infos{
+	padding: 10px;
+	background-color: #000000;
+	opacity: 0.8;
 }
 
 @media screen and (max-width: 576px) {
@@ -290,5 +330,9 @@ a, button, input, select {
 
 	.company-type{
 		font-size: 1em;
+	}
+
+	#web-service{
+		padding-top: 10vh;
 	}
 }

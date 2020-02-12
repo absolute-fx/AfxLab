@@ -8,9 +8,9 @@ import { GUI } from '../js/jsm/libs/dat.gui.module.js';
 
 let container;
 let loadingManager;
-let camera, scene, renderer, ambientLight, pointLight, scene_bLight, scene_bLight_2, scene_bLight_3, composer;
+let camera, scene, renderer, ambientLight, pointLight, composer, room_02_Light;
 let mX, mY;
-let mixer;
+let mixer, mixer_b;
 let mouseX = 0;
 let mouseY = 0;
 let windowHalfX = window.innerWidth / 2;
@@ -35,13 +35,15 @@ const idleRadius = 300;
 const idleSpeed = 0.003;
 const idleSensibility = 0.025;
 let idleStore = 0;
-let neck, waist;
+let neck, waist, neck_r2, waist_r2;
+
+// character mats
+let characterTopMat, characterBodyMat, characterBottomMat, shoesMat;
 
 init();
 
 
 function init() {
-
     loadingManager = new THREE.LoadingManager( () => {
 
         const loadingScreen = document.getElementById( 'loading-screen' );
@@ -59,29 +61,21 @@ function init() {
     camera.lookAt( lookAtInit.x, lookAtInit.y, lookAtInit.z );
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color( 0x000000 );
+    scene.background = new THREE.Color( 0x221e22 );
 
     ambientLight = new THREE.AmbientLight( 0xffffff );
     ambientLight.intensity = 0.7;
     scene.add( ambientLight );
 
-    var light = new THREE.HemisphereLight( 0xffffff, 0x080820, 1 ); scene.add( light );
+    let light = new THREE.HemisphereLight( 0xffffff, 0xee83e5, 1 ); scene.add( light );
 
     pointLight = new THREE.PointLight( 0xffffff, 20, 5000 );
     pointLight.position.set( 200, 200, 200 );
     scene.add( pointLight );
 
-    scene_bLight = new THREE.PointLight( 0xffffff, 20, 500 );
-    scene_bLight.position.set( 900, -150, -19.712 );
-    scene.add( scene_bLight );
-
-    scene_bLight_2 = new THREE.PointLight( 0xffffff, 20, 500 );
-    scene_bLight_2.position.set( 700, -200, -200 );
-    scene.add( scene_bLight_2 );
-
-    scene_bLight_3 = new THREE.PointLight( 0xffffff, 20, 500 );
-    scene_bLight_3.position.set( 800, -200, 500 );
-    scene.add( scene_bLight_3 );
+    room_02_Light = new THREE.PointLight( 0xee83e5, 20, 5000 );
+    room_02_Light.position.set( -200, -300, -50 );
+    scene.add( room_02_Light );
 
     // main materials
     let mainLoaderEnv = new THREE.CubeTextureLoader();
@@ -103,9 +97,9 @@ function init() {
 
     renderer.outputEncoding = THREE.sRGBEncoding;
 
-    renderer.gammaInput = true;
-    renderer.gammaOutput = true;
-    renderer.shadowMap.enabled = true;
+    //renderer.gammaInput = true;
+    //renderer.gammaOutput = true;
+    //renderer.shadowMap.enabled = true;
     //renderer.shadowMap.bias = 0.0001;
     //renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild( renderer.domElement );
@@ -124,19 +118,18 @@ function init() {
         }
         lastScrollTop = st;
 
-        const scrollPos = $(document).scrollTop();
         $('.navbar-nav a').each(function () {
             const currLink = $(this);
-            const refElement = $(currLink.data("href"));
-            if (refElement.position().top <= scrollPos && refElement.position().top + refElement.height() > scrollPos) {
-                $('.navbar-nav li a').removeClass("active");
+            let refElement = $(currLink.data("href"));
+            const isSm = $(currLink).data('sm');
+            if(isSm) refElement = $(currLink.data("href")).parent();
+            if (refElement.position().top <= st && refElement.position().top + refElement.height() > st) {
                 currLink.addClass("active");
             }
             else{
                 currLink.removeClass("active");
             }
         });
-
     });
 
     document.addEventListener('keydown', (e) => {
@@ -194,7 +187,7 @@ function setScene_1(){
     let bodyCharNormal = bodyCharLoaderNormal.load(assetsRoot + 'perso_Body_normal.png');
     bodyCharNormal.encoding = THREE.sRGBEncoding;
 
-    let characterBodyMat = new THREE.MeshPhysicalMaterial( {
+    characterBodyMat = new THREE.MeshPhysicalMaterial( {
         color: 0xbb9166,
         map: bodyCharBase,
         roughness: 1,
@@ -218,7 +211,7 @@ function setScene_1(){
     let topCharNormal = topCharLoaderNormal.load(assetsRoot + 'perso_Top_normal.png');
     topCharNormal.encoding = THREE.sRGBEncoding;
 
-    let characterTopMat = new THREE.MeshStandardMaterial( {
+    characterTopMat = new THREE.MeshStandardMaterial( {
         color: 0xbb9166,
         map: topCharBase,
         roughness: 1,
@@ -241,7 +234,7 @@ function setScene_1(){
     let bottomCharNormal = bottomCharLoaderNormal.load(assetsRoot + 'perso_Bottom_normal.png');
     bottomCharNormal.encoding = THREE.sRGBEncoding;
 
-    let characterBottomMat = new THREE.MeshStandardMaterial( {
+    characterBottomMat = new THREE.MeshStandardMaterial( {
         color: 0xbb9166,
         map: bottomCharBase,
         roughness: 1,
@@ -256,7 +249,7 @@ function setScene_1(){
     let shoesCharBase = shoesCharLoaderDi.load(assetsRoot + 'perso_Shoes_diffuse.png');
     shoesCharBase.encoding = THREE.sRGBEncoding;
 
-    let shoesMat = new THREE.MeshStandardMaterial( {
+    shoesMat = new THREE.MeshStandardMaterial( {
         color: 0xbb9166,
         map: shoesCharBase,
     } );
@@ -284,6 +277,7 @@ function setScene_1(){
             if (child.isBone) {
                 //console.log(child.name);
                 if (child.name === 'mixamorig_Head') {
+                    //console.log(child);
                     neck = child;
                 }
                 if (child.name === 'mixamorigSpine') {
@@ -298,6 +292,7 @@ function setScene_1(){
         object.position.x = 19.428;
         mixer = new THREE.AnimationMixer( object );
         //object.animations[0].duration = 15;
+        //console.log(object.animations);
 
         idleAnim = object.animations[ 0 ];
         idleAnim.tracks.splice(30, 3);
@@ -305,8 +300,10 @@ function setScene_1(){
         let action = mixer.clipAction(idleAnim);
         //console.log(idleAnim);
         action.play();
-
+        //let room_2_char = object.clone();
+        //room_2_char.setPosition(0, -350, 0);
         scene.add( object );
+        //scene.add( room_2_char );
     } );
 
     let rocketLoaderDi = new THREE.TextureLoader();
@@ -462,164 +459,234 @@ function setScene_2(){
     let structure_Loader = new FBXLoader();
     let diffuseMap;
 
-    /*
-    diffuseMap = textureLoader.load( assetsRoot + 'structure-01_base.jpg' );
+    diffuseMap = textureLoader.load( assetsRoot + 'concrete.jpg' );
+    diffuseMap.wrapS = diffuseMap.wrapT = THREE.RepeatWrapping;
+    diffuseMap.offset.set( 0, 0 );
+    let lightMap = textureLoader.load( assetsRoot + 'room-02_lm.jpg' );
+    let concreteRough = textureLoader.load( assetsRoot + 'concrete.jpg' );
+    concreteRough.wrapS = concreteRough.wrapT = THREE.RepeatWrapping;
+    concreteRough.offset.set( 0, 0 );
+    let concreteNormal = textureLoader.load( assetsRoot + 'concrete_normal.jpg' );
+    concreteNormal.wrapS = concreteNormal.wrapT = THREE.RepeatWrapping;
+    concreteNormal.offset.set( 0, 0 );
 
-    let pbrMap = textureLoader.load( assetsRoot + 'structure-01_pbr.jpg' );
-
-    textureLoader = new THREE.TextureLoader();
-    let normalMap = textureLoader.load( assetsRoot + 'structure_01_normal.jpg' );
-
-
-    let structure_01Mat = new THREE.MeshPhysicalMaterial( {
-        color: 0xff6f17,
-        map: diffuseMap,
-        roughness: 1,
-        roughnessMap: pbrMap,
-        metalness:1,
-        metalnessMap: pbrMap,
+    let romm_02_floor = new THREE.MeshStandardMaterial( {
+        color: 0x740900,
+        //map: diffuseMap,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        lightMapIntensity: 1,
+        roughness: 0.9,
+        roughnessMap: concreteRough,
         envMap: mainEnv,
         envMapIntensity: 1,
-        normalMap: normalMap,
+        normalMap: concreteNormal
     } );
 
-    structure_Loader = new FBXLoader();
-    structure_Loader.load( assetsRoot + 'structure_01.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                child.material = structure_01Mat;
-                //child.receiveShadow = true;
-            }
-
-        } );
-        let bounding = new THREE.Box3().setFromObject(object);
-        console.log(bounding.getSize().z);
-        object.position.y = -176.936;
-        object.position.z = -227.482;
-        object.position.x = 559.229;
-
-        let structClone_01 = object.clone();
-        structClone_01.position.z = object.position.z + bounding.getSize().z - 5;
-        structClone_01.position.x = object.position.x;
-        structClone_01.position.y = object.position.y;
-
-        let structClone_02 = object.clone();
-        structClone_02.position.z = structClone_01.position.z + bounding.getSize().z - 5;
-        structClone_02.position.x = object.position.x;
-        structClone_02.position.y = object.position.y;
-
-        scene.add( object );
-        scene.add( structClone_01 );
-        scene.add( structClone_02 );
-
-    } );
-
-    diffuseMap = textureLoader.load( assetsRoot + 'structure-02_base.jpg' );
-    pbrMap = textureLoader.load( assetsRoot + 'structure-02_pbr.jpg' );
-    normalMap = textureLoader.load( assetsRoot + 'structure-02_normal.jpg' );
-
-    let structure_02Mat = new THREE.MeshPhysicalMaterial( {
-        color: 0x3d3d3d,
-        map: diffuseMap,
-        roughness: 0.5,
-        roughnessMap: pbrMap,
-        metalness:1,
-        metalnessMap: pbrMap,
+    let romm_02_walls = new THREE.MeshStandardMaterial( {
+        color: 0x1c1c1c,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        lightMapIntensity: 1,
+        roughness: 0.9,
+        roughnessMap: concreteRough,
         envMap: mainEnv,
-        envMapIntensity: 1.5,
-        normalMap: normalMap,
+        envMapIntensity: 0.5,
+        normalMap: concreteNormal
     } );
 
-
-    structure_Loader.load( assetsRoot + 'structure_02.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                child.material = structure_02Mat;
-                //child.receiveShadow = true;
-            }
-
-        } );
-        object.position.x = 559.229;
-        object.position.y = -110.245;
-        object.position.z = -522.778;
-
-        let tube_02 = object.clone();
-        object.position.x = 559.229;
-        object.position.y = -110.245;
-        object.position.z = -16.218;
-
-        scene.add( object );
-        scene.add( tube_02 );
-
+    let romm_02_doors = new THREE.MeshStandardMaterial( {
+        //color: 0xff6f17,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        lightMapIntensity: 1,
+        roughness: 0.3,
     } );
 
-
-    diffuseMap = textureLoader.load( assetsRoot + 'structure-03_base.jpg' );
-    pbrMap = textureLoader.load( assetsRoot + 'structure-03_pbr.jpg' );
-    normalMap = textureLoader.load( assetsRoot + 'structure-03_normal.jpg' );
-
-    let structure_03Mat = new THREE.MeshPhysicalMaterial( {
-        color: 0x3d3d3d,
-        map: diffuseMap,
-        roughness: 1,
-        roughnessMap: pbrMap,
-        metalness:0.9,
-        metalnessMap: pbrMap,
+    let romm_02_frames = new THREE.MeshStandardMaterial( {
+        color: 0x474747,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        lightMapIntensity: 1,
+        roughness: 0.9,
+        roughnessMap: concreteRough,
         envMap: mainEnv,
         envMapIntensity: 1,
-        normalMap: normalMap,
+        normalMap: concreteNormal,
+        metalnessMap: concreteRough
     } );
 
-    structure_Loader.load( assetsRoot + 'structure_03.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                child.material = structure_03Mat;
-                //child.receiveShadow = true;
-            }
-
-        } );
-        object.position.x = 560.925;
-        object.position.y = -108.73;
-        object.position.z = -17.763;
-
-        let axe_01 = object.clone();
-        axe_01.position.x = 560.925;
-        axe_01.position.y = -108.73;
-        axe_01.position.z = 474.333;
-
-        let axe_02 = object.clone();
-        axe_02.position.x = 560.925;
-        axe_02.position.y = -108.73;
-        axe_02.position.z = -524.323;
-
-        scene.add( object );
-        scene.add( axe_01 );
-
+    let romm_02_baseboard = new THREE.MeshStandardMaterial( {
+        color: 0x616161,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        lightMapIntensity: 1,
+        roughness: 0.9,
+        roughnessMap: concreteRough,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: concreteNormal,
     } );
-    */
-    diffuseMap = textureLoader.load( assetsRoot + 'room_02-base.jpg' );
 
-    let romm_02 = new THREE.MeshStandardMaterial( {
-        color: 0xff6f17,
-        map: diffuseMap
+    let romm_02_ceil = new THREE.MeshStandardMaterial( {
+        color: 0x616161,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        lightMapIntensity: 1
     } );
+
+    let romm_02_light = new THREE.MeshBasicMaterial( {
+        //color: 0x616161,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        aoMapIntensity: 0.5,
+        lightMapIntensity: 0.5,
+        emissive: 0xffffff,
+        emissiveIntensity: 10
+    } );
+
+
     structure_Loader.load( assetsRoot + 'room-02.fbx', function ( object ) {
 
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
-                //child.material = romm_02;
+                //console.log(child);
+                if(child.name === "floor")child.material = romm_02_floor;
+                //if(child.name === "cover")child.material = romm_02_floor;
+                if(child.name === "wall_debris" || child.name === "cover")child.material = romm_02_walls;
+                if(child.name === "doors_code")child.material = romm_02_doors;
+                if(child.name === "frames")child.material = romm_02_frames;
+                if(child.name === "baseboard")child.material = romm_02_baseboard;
+                if(child.name === "ceil")child.material = romm_02_ceil;
+                if(child.name === "lights")child.material = romm_02_light;
+
                 //child.receiveShadow = true;
             }
 
         } );
 
+        scene.add( object );
+
+    } );
+
+    lightMap = textureLoader.load( assetsRoot + 'room-02_assets_lm.jpg' );
+    let illuMap = textureLoader.load( assetsRoot + 'room-02_assets_illu.jpg' );
+    diffuseMap = textureLoader.load( assetsRoot + 'room-02_assets_diff.jpg' );
+    let assetsPBRMap = textureLoader.load( assetsRoot + 'room-02_assets_pbr.png' );
+
+    let romm_02_assets = new THREE.MeshStandardMaterial( {
+        //color: 0x1a1515,
+        map: diffuseMap,
+        lightMap: lightMap,
+        aoMap: lightMap,
+        //roughnessMap: assetsPBRMap,
+        roughness: 1,
+        //metalnessMap: assetsPBRMap,
+        //metalness: 1,
+        aoMapIntensity: 1,
+        lightMapIntensity: 1,
+        //emissiveIntensity: 10,
+        //emissiveMap: illuMap,
+        //emissive: 0xffffff,
+        //envMap: mainEnv,
+        envMapIntensity: 0,
+    } );
+
+    structure_Loader.load( assetsRoot + 'room-02-assets.fbx', function ( object ) {
+
+        object.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+                child.material = romm_02_assets;
+            }
+
+        } );
+
+        scene.add( object );
+
+    } );
+
+    let idleAnim;
+    let loaderCharacter = new FBXLoader(loadingManager);
+
+    let body_lm = textureLoader.load( assetsRoot + 'char-02-lm.jpg' );
+    let body_char_02 = new THREE.MeshPhongMaterial({
+            map: body_lm
+        }
+
+    );
+    body_char_02.skinning = true;
+    loaderCharacter.load( assetsRoot + 'sit.fbx', function ( object ) {
+
+        object.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+                //console.log(child.name);
+                //child.castShadow = true;
+                //child.receiveShadow = true;
+                if(child.name === 'Body') {
+                    child.material = body_char_02;
+                }
+
+                //if(child.name === 'Tops') child.material = characterTopMat;
+                //if(child.name === 'Bottoms') child.material = characterBottomMat;
+                //if(child.name === 'Shoes') child.material = shoesMat;
+            }
+            if (child.isBone) {
+                //console.log(child.name);
+                if (child.name === 'mixamorig_Head') {
+                    //console.log(child);
+                    neck_r2 = child;
+                }
+                if (child.name === 'mixamorigSpine') {
+                    waist_r2 = child;
+                }
+            }
+
+        } );
+
+        mixer_b = new THREE.AnimationMixer( object );
+
+        idleAnim = object.animations[ 0 ];
+        idleAnim.tracks.splice(30, 3);
+        //idleAnim.tracks.splice(4, 1);
+        let action = mixer_b.clipAction(idleAnim);
+        //console.log(idleAnim);
+        action.play();;
+        scene.add( object );
+        //scene.add( room_2_char );
+    } );
+
+    diffuseMap = textureLoader.load( assetsRoot + 'plant_diff.png' );
+    assetsPBRMap = textureLoader.load( assetsRoot + 'plant_pbr.png' );
+    //let normalMap = textureLoader.load( assetsRoot + 'plant_norm.png' );
+
+    let plant_mat = new THREE.MeshStandardMaterial( {
+        //color: 0x616161,
+        map: diffuseMap,
+        lightMap: assetsPBRMap,
+        roughnessMap: assetsPBRMap,
+        aoMap: assetsPBRMap,
+        aoMapIntensity: 1,
+        lightMapIntensity: 1,
+        //normalMap: normalMap,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+    } );
+    plant_mat.transparent = true;
+    plant_mat.side = THREE.DoubleSide;
+    plant_mat.alphaTest = 0.5;
+    structure_Loader.load( assetsRoot + 'plant.fbx', function ( object ) {
+
+        object.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+                child.material = plant_mat;
+            }
+
+        } );
+        //object.position.x += 400;
         scene.add( object );
 
     } );
@@ -633,7 +700,8 @@ function onDocumentMouseMove( event ) {
     mX = event.clientX;
     mY = event.clientY;
 
-    if ( neck ) moveJoint(neck, 30);
+    if ( neck ) moveJoint(neck, 30, -400, -300);
+    if ( neck_r2 ) moveJoint(neck_r2, 60, -200, -300);
 }
 
 function onWindowResize() {
@@ -647,8 +715,8 @@ function onWindowResize() {
 let a_distance = {x:0 , y:-100, z: -200};
 let a_LA_Distance = {x:0 , y:0, z: 50};
 
-let b_distance = {x:600 , y:-100, z: -400};
-let b_LA_Distance = {x:560 , y:-360, z: -50};
+let b_distance = {x:200 , y:-250, z: -75};
+let b_LA_Distance = {x:0 , y:-300, z: -135};
 
 function updateCamera(move){
     //console.log(move);
@@ -733,6 +801,7 @@ function animate() {
 
         let delta = clock.getDelta();
         if ( mixer ) mixer.update( delta );
+        if ( mixer_b ) mixer_b.update( delta );
 
         scene.rotation.y += idleSensibility * ( targetX - scene.rotation.y );
         scene.rotation.x += idleSensibility * ( targetY - scene.rotation.x );
@@ -786,8 +855,9 @@ function onTransitionEnd( event ) {
     event.target.remove();
 }
 
-function moveJoint(joint, degreeLimit) {
-    let degrees = getMouseDegrees(mX, mY, degreeLimit);
+function moveJoint(joint, degreeLimit, fineTuneX, fineTuneY) {
+    //console.log(joint);
+    let degrees = getMouseDegrees(mX + fineTuneX, mY + fineTuneY, degreeLimit);
     joint.rotation.y = THREE.Math.degToRad(degrees.x);
     joint.rotation.x = THREE.Math.degToRad(degrees.y);
 }
@@ -800,8 +870,8 @@ function getMouseDegrees(x, y, degreeLimit) {
         ydiff,
         yPercentage;
 
-    x -= 400;
-    y -= 300;
+    //x -= 400;
+    //y -= 300;
 
     let w = { x: window.innerWidth, y: window.innerHeight };
 
@@ -837,4 +907,3 @@ function getMouseDegrees(x, y, degreeLimit) {
     }
     return { x: dx, y: dy };
 }
-
