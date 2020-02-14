@@ -3,11 +3,10 @@ import { TWEEN } from '../js/jsm/libs/tween.module.min.js';
 import { FBXLoader } from '../js/jsm/loaders/FBXLoader.js';
 import { EffectComposer } from '../js/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '../js/jsm/postprocessing/RenderPass.js';
-import { GUI } from '../js/jsm/libs/dat.gui.module.js';
 
 
 let container;
-let loadingManager;
+let loadingManager_r1;
 let camera, scene, renderer, ambientLight, pointLight, composer, room_02_Light;
 let mX, mY;
 let mixer, mixer_b;
@@ -44,14 +43,26 @@ init();
 
 
 function init() {
-    loadingManager = new THREE.LoadingManager( () => {
+    loadingManager_r1 = new THREE.LoadingManager();
 
+    loadingManager_r1.onStart = (url, itemsLoaded, itemsTotal) =>{
+        console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+    };
+
+    loadingManager_r1.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+
+            console.log( 'Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+
+    };
+
+    loadingManager_r1.onLoad =  () => {
+        console.log('Loading completed');
         const loadingScreen = document.getElementById( 'loading-screen' );
         $('#sections-container').show();
         loadingScreen.classList.add( 'fade-out' );
         loadingScreen.addEventListener( 'transitionend', onTransitionEnd );
 
-    } );
+    } ;
 
     container = document.createElement( 'div' );
     document.body.appendChild( container );
@@ -148,7 +159,7 @@ function init() {
 
 function setScene_1(){
     // model room main
-    let textureLoader = new THREE.TextureLoader();
+    let textureLoader = new THREE.TextureLoader(loadingManager_r1);
     let diffuseMap = textureLoader.load( assetsRoot + 'room-main-diffuse.jpg' );
     diffuseMap.encoding = THREE.sRGBEncoding;
 
@@ -256,7 +267,7 @@ function setScene_1(){
     shoesMat.skinning = true;
 
     let idleAnim;
-    let loaderCharacter = new FBXLoader(loadingManager);
+    let loaderCharacter = new FBXLoader(loadingManager_r1);
 
     loaderCharacter.load( assetsRoot + 'character.fbx', function ( object ) {
 
@@ -462,7 +473,8 @@ function setScene_2(){
     diffuseMap = textureLoader.load( assetsRoot + 'concrete.jpg' );
     diffuseMap.wrapS = diffuseMap.wrapT = THREE.RepeatWrapping;
     diffuseMap.offset.set( 0, 0 );
-    let lightMap = textureLoader.load( assetsRoot + 'room-02_lm.jpg' );
+    let lightMap = textureLoader.load( assetsRoot + 'room-02_lm.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    //lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
     let concreteRough = textureLoader.load( assetsRoot + 'concrete.jpg' );
     concreteRough.wrapS = concreteRough.wrapT = THREE.RepeatWrapping;
     concreteRough.offset.set( 0, 0 );
@@ -608,7 +620,7 @@ function setScene_2(){
     } );
 
     let idleAnim;
-    let loaderCharacter = new FBXLoader(loadingManager);
+    let loaderCharacter = new FBXLoader();
 
     let body_lm = textureLoader.load( assetsRoot + 'char-02-lm.jpg' );
     let body_char_02 = new THREE.MeshPhongMaterial({
