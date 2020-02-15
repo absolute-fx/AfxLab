@@ -19,50 +19,52 @@
 	<div id="loader"></div>
 </section>
 <header>
-	<nav class="navbar navbar-expand-md navbar-dark fixed-top">
+	<nav class="navbar navbar-expand-md navbar-dark fixed-top invisible ">
 		<a class="navbar-brand" href="#">AFXLAB</a>
 		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
 		</button>
-		<div class="collapse navbar-collapse" id="navbarCollapse">
-			<ul class="navbar-nav mr-auto">
-				<li class="nav-item">
-					<a class="nav-link active" id="home-btn" data-href="#launch" href="#">Home <span class="sr-only">(current)</span></a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="about-btn" data-href="#about" data-sm="1" href="#">About</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="web-btn" data-href="#web-service" href="#">Web</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="3d-btn" data-href="#3d-service" href="#">3D</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="video-btn" data-href="#video-service" href="#">Video</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="drone-btn" data-href="#drone-service" href="#">Drone</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="portfolio-btn" data-href="#portfolio" href="#">Portfolio</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="contact-btn" data-href="#contact" href="#">Contact</a>
-				</li>
-			</ul>
+		<div id="main-menu">
+			<div class="collapse navbar-collapse" id="navbarCollapse">
+				<ul class="navbar-nav mr-auto">
+					<li class="nav-item">
+						<a class="nav-link active invisible" id="home-btn" data-href="#launch" href="#">Home <span class="sr-only">(current)</span></a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link invisible" id="about-btn" data-href="#about" data-sm="1" href="#">About</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link invisible" id="web-btn" data-href="#web-service" href="#">Web</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link invisible" id="3d-btn" data-href="#3d-service" href="#">3D</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link invisible" id="video-btn" data-href="#video-service" href="#">Video</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link invisible" id="drone-btn" data-href="#drone-service" href="#">Drone</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link invisible" id="portfolio-btn" data-href="#portfolio" href="#">Portfolio</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link invisible" id="contact-btn" data-href="#contact" href="#">Contact</a>
+					</li>
+				</ul>
+			</div>
 		</div>
 	</nav>
 </header>
-<section id="launch">
-	<div class="home-headline">
-		<h1>WE JUST MAKE YOU STRONGER</h1>
-		<p class="company-type"># DIGITAL PRODUCTION AGENCY</p>
-		<h2><span class="secondary-color">_</span>WEB DEV <span class="secondary-color">_</span>3D <span class="secondary-color">_</span>VIDEO <span class="secondary-color">_</span>DRONE</h2>
-	</div>
-</section>
-<div id="sections-container" class="h-100">
-	<section id="about" >
+<div id="sections-container">
+	<section id="launch">
+		<div class="home-headline">
+			<h1>WE JUST MAKE YOU STRONGER</h1>
+			<p class="company-type"># DIGITAL PRODUCTION AGENCY</p>
+			<h2><span class="secondary-color">_</span>WEB DEV <span class="secondary-color">_</span>3D <span class="secondary-color">_</span>VIDEO <span class="secondary-color">_</span>DRONE</h2>
+		</div>
+	</section>
+	<section id="about">
 		<div class="container">
 			<div class="row mb-3">
 				<div class="col-md-4">
@@ -119,7 +121,7 @@
 			</div>
 		</div>
 	</section>
-	<section id="web-service">
+	<section id="web-service" class="d-none">
 		<div class="container">
 			<div class="row">
 				<div class="col-md-4">
@@ -129,31 +131,36 @@
 					<div class="web-hdl">
 						<p>We know which doors have to be unlocked to make your project smarter</p>
 					</div>
-					<p class="web-infos">Creative, corporate, functional? Is that the way you want your website to be? <stong>AfxLab</stong> is a partner of choice to make your business grow. With our 20 years of experience in the web industry, we always offer to our clients the best technology that meets their needs. Custom CMS, Wordpress, NodeJS,... It's up to you!</p>
+					<p class="web-infos">Creative, corporate, functional? Is that the way you want your website to be? <stong>AfxLab</stong> is a partner of choice to make your business grow. With our 20 years of experience in the web industry, we always offer to our clients the best technology that meets their needs. <button type="button" class="btn btn-primary btn-sm" onclick="setOverlay('web');">Check it out</button></p>
 				</div>
 			</div>
 		</div>
 	</section>
-	<section id="3d-service">
+	<section id="3d-service" class="d-none">
 
 	</section>
-	<section id="video-service">
+	<section id="video-service" class="d-none">
 
 	</section>
-	<section id="drone-service">
+	<section id="drone-service" class="d-none">
 
 	</section>
-	<section id="portfolio">
+	<section id="portfolio" class="d-none">
 
 	</section>
-	<section id="contact">
+	<section id="contact" class="d-none">
 
 	</section>
 </div>
 <div id="vignette"></div>
+<div class="overlay">
+	<a href="#" class="close"></a>
+	<div class="overlay-container"></div>
+</div>
 <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="./js/bootstrap.min.js"></script>
 <script type="text/javascript" src="./js/modernizr.custom.min.js"></script>
+<script type="text/javascript" src="./js/swup.min.js"></script>
 <script type="module" src="./js/3d-scene.js"></script>
 <script type="text/javascript" src="./js/gsap.min.js"></script>
 <script type="text/javascript" src="./js/ScrollMagic.min.js"></script>
