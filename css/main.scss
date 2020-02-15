@@ -1,5 +1,7 @@
 $primary-font: 'Anton', sans-serif;
 $secondary-font: 'Julius Sans One', sans-serif;
+$main-grad: linear-gradient(120deg, #f5576c 0%, #f093fb 100%);
+
 
 /* width */
 ::-webkit-scrollbar {
@@ -263,7 +265,7 @@ section h3{
 }
 
 #launch{
-  //position: relative;
+  position: relative;
   overflow: hidden;
   min-height: 100vh;
 }
@@ -284,6 +286,10 @@ section h3{
 
 .h-slider{
   overflow: hidden;
+}
+
+#about .container{
+    margin-bottom: 50px;
 }
 
 #about-description{
@@ -310,6 +316,7 @@ section h3{
   line-height: 20px;
 }
 
+
 #web-service{
   height: 100vh;
   padding-top: 25vh;
@@ -320,18 +327,53 @@ section h3{
   font-size: 1.5em;
 }
 
-.web-infos{
+//.web-infos{
+//  padding: 10px;
+//  opacity: 0.8;
+//  background-color: #232427;
+//  background-image: $main-grad;
+//  border-radius: 10px;
+//}
+
+.web-infos {
+  position: relative;
+  text-align: justify;
+  background-color: rgba(35, 36, 39, 0.8);
+  border: 4px solid white;
   padding: 10px;
-  background-color: #000000;
-  opacity: 0.8;
+  border-radius: 10px;
 }
+.web-infos:after, .arrow_box:before {
+  top: 100%;
+  left: 50%;
+  border: solid transparent;
+  content: " ";
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.web-infos:after {
+  border-color: rgba(136, 183, 213, 0);
+  border-top-color: #232427;
+  border-width: 30px;
+  margin-left: -30px;
+}
+.web-infos:before {
+  border-color: rgba(194, 225, 245, 0);
+  border-top-color: white;
+  border-width: 36px;
+  margin-left: -36px;
+}
+
 
 .overlay{
   z-index: 999;
   position: fixed;
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(120deg, #f5576c 0%, #f093fb 100%);
+  background-image: $main-grad;
   //transform: scale(0);
   transform-origin: left;
   transition: .2s cubic-bezier(0, 0, .58, 1);
@@ -380,7 +422,8 @@ section h3{
 
 @media screen and (max-width: 576px) {
   .home-headline h1{
-    font-size: 4em;
+    //display: none;
+    font-size: 4em!important;
     left: 25px;
   }
 
@@ -395,4 +438,5 @@ section h3{
   #web-service{
     padding-top: 10vh;
   }
+
 }

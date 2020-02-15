@@ -36,6 +36,7 @@ const idleSpeed = 0.003;
 const idleSensibility = 0.025;
 let idleStore = 0;
 let neck, waist, neck_r2, waist_r2;
+let rendering = true;
 
 const webSectionsPlates = {
     "plate-L-01": "PHP",
@@ -47,6 +48,7 @@ const webSectionsPlates = {
     "plate-R-03": "WORDPRESS",
     "plate-R-04": "ELECTRON"
 };
+setNav();
 
 // character mats
 let characterTopMat, characterBodyMat, characterBottomMat, shoesMat;
@@ -58,11 +60,94 @@ f.load().then(function(loaded_face) {
     init();
 });
 
+let clickAnimate = false;
+function setNav(){
+    $('.navbar-nav a').each(function () {
+        //$(this).removeClass('active');
+        $(this).click(function() {
+            let target = $(this).data('href');
+            navClickAction(target, this);
+        })
+    })
+}
 
+function navClickAction(target, btn){
+    clickAnimate = true;
+    $('html, body').animate({
+        scrollTop: $(target).offset().top
+    },2000, function(){
+        // complete
+        clickAnimate = false;
+    });
 
+    $('.navbar-nav a').each(function () {
+        $(this).removeClass('active');
+    });
+    $(btn).addClass('active');
+}
+
+$("#web-overlay-btn").click(function(){
+    rendering = false;
+    setOverlay('web');
+    return false;
+});
+
+function setOverlay(cat){
+    //$('.overlay').css("top", 0);
+    $("canvas").addClass('d-none');
+    $("#sections-container").addClass('d-none');
+    $('.overlay').addClass('overlay-animating');
+    $('.overlay').removeClass('overlay-animating-out');
+    $("#main-menu").fadeOut();
+    //$('.navbar-toggler').hide();
+    window.location.hash = '';
+
+    $('.overlay-container').load('web-dev.html');
+}
+
+$('.overlay a').click(function(){
+    $('.overlay-content').fadeOut(function() {
+        $('.overlay-content').remove();
+        closeOverlay();
+    });
+
+    return false
+});
+
+document.addEventListener('keydown', (e) => {
+    if(e.key === "²"){
+        $("#sections-container").removeClass('d-none');
+        window.location.hash = 'web-service';
+        $("canvas").removeClass('d-none');
+    }
+    if(e.key === "0"){
+        $('.overlay').addClass('overlay-animating');
+        $('.overlay').removeClass('overlay-animating-out');
+    }
+
+    if(e.key === "Escape"){
+        $('.overlay-content').fadeOut(function() {
+            $('.overlay-content').remove();
+            closeOverlay();
+        });
+    }
+
+});
+
+function closeOverlay(){
+    $("#sections-container").removeClass('d-none');
+    $("canvas").removeClass('d-none');
+    window.location.hash = 'web-service';
+    $('.overlay').removeClass('overlay-animating');
+    $('.overlay').addClass('overlay-animating-out');
+    $("#main-menu").fadeIn();
+    rendering = true;
+    animate();
+    //$('.navbar-toggler').show();
+}
 
 function init() {
-    setRoom_01Loader()
+    setRoom_01Loader();
     container = document.createElement( 'div' );
     document.body.appendChild( container );
 
@@ -121,9 +206,9 @@ function init() {
         let st = $(this).scrollTop();
         if (st > lastScrollTop){
             // downscroll code
-            updateCamera('down');
+            //updateCamera('down');
         } else {
-            updateCamera('up');
+            //updateCamera('up');
         }
         lastScrollTop = st;
 
@@ -151,8 +236,6 @@ function init() {
     const renderPass = new RenderPass( scene, camera );
     composer.addPass(renderPass);
 
-
-    animate();
 }
 
 function setRoom_1(){
@@ -675,6 +758,7 @@ function setRoom_01Loader(){
         $('.navbar').removeClass('invisible');
         $('#home-btn').removeClass('invisible');
         $('#about-btn').removeClass('invisible');
+        animate();
         setRoom_02Loader();
     } ;
 }
@@ -761,11 +845,10 @@ function updateCamera(move){
     let newLookAtX;
     let newLookAtY;
     let newLookAtZ;
-    //console.log(window.scrollY);
 
-    if(move === "up" && window.scrollY === 0){
+    //if(move === "up" && window.scrollY === 0){
         // hack jquery
-    }else{
+    //}else{
         if(window.scrollY < maxYScrollScene_a){
             //console.log("A scope");
             newPosZ = camPositions[0].z + (window.scrollY * a_distance.z)/maxYScrollScene_a;
@@ -775,8 +858,9 @@ function updateCamera(move){
             camera.position.z = newPosZ;
             camera.position.y = newPosY;
             camera.lookAt( lookAtInit.x, lookAtInit.y, newLookAtZ );
+            //console.log("launch - About");
         }
-        if(window.scrollY > startYScrollScene_b && window.scrollY < maxYScrollScene_b){
+        if(window.scrollY > startYScrollScene_b && window.scrollY < maxYScrollScene_b + 100){
             //console.log("B scope");
             //console.log(window.scrollY - startYScrollScene_b);
             newPosX = camPositions[0].x + ((window.scrollY - startYScrollScene_b) * b_distance.x)/b_scrollPix;
@@ -790,8 +874,9 @@ function updateCamera(move){
             camera.position.x = newPosX;
             camera.position.y = newPosY;
             camera.position.z = newPosZ;
+            console.log("web");
         }
-    }
+    //}
 
 
 
@@ -837,16 +922,27 @@ function animate() {
 
     }
     TWEEN.update();
+    if(clickAnimate){
+        if(window.scrollY > 0){
+            //console.log('anim click = true');
+            updateCamera();
+        }
+    }else{
+        //console.log('anim click = false');
+        updateCamera();
+    }
+
     //camera.position.set( 0, camY, 150);
     //console.log(camera.rotation.z);
     //renderer.render( scene, camera );
     composer.render();
-    requestAnimationFrame( animate );
+    if(rendering) requestAnimationFrame( animate );
 }
 
 function transitionCam(){
+    rendering = false;
     //console.log('tween');
-    if(actualPos === 0){
+    /*if(actualPos === 0){
         tweenPos = new TWEEN.Tween( camera.position )
             .to( { x: camPositions[1].x, y: camPositions[1].y, z: camPositions[1].z }, duration )
             .easing( TWEEN.Easing.Exponential.InOut )
@@ -870,7 +966,8 @@ function transitionCam(){
         actualPos = 0;
     }
     inTransition = true;
-    tweenPos.onComplete(tweenCompleted);
+    tweenPos.onComplete(tweenCompleted);*/
+
 }
 
 function tweenCompleted(){
@@ -936,4 +1033,8 @@ function getMouseDegrees(x, y, degreeLimit) {
         dy = (degreeLimit * yPercentage) / 100;
     }
     return { x: dx, y: dy };
+}
+
+function stopRendering(){
+    rendering = false;
 }
