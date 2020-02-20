@@ -4,7 +4,9 @@ import { FBXLoader } from '../js/jsm/loaders/FBXLoader.js';
 import { EffectComposer } from '../js/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '../js/jsm/postprocessing/RenderPass.js';
 import { THREEx } from '../js/threex.afxlab.module.js';
+import { SkeletonUtils } from '../js/jsm/utils/SkeletonUtils.js';
 import * as CharacterInstancer from '../js/characters.afxlab.module.js';
+
 
 let container;
 let loadingManager_r1, loadingManager_r2;
@@ -50,104 +52,12 @@ const webSectionsPlates = {
     "plate-R-04": "ELECTRON"
 };
 
+let main_character;
 let room_01_character;
 let sceneCastShadows = true;
 
-setNav();
+init();
 
-// LAYOUT >/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-let f = new FontFace('Anton', 'url(./fonts/Anton-Regular.ttf)');
-f.load().then(function(loaded_face) {
-    document.fonts.add(loaded_face);
-    init();
-});
-
-let clickAnimate = false;
-function setNav(){
-    $('.navbar-nav a').each(function () {
-        //$(this).removeClass('active');
-        $(this).click(function() {
-            let target = $(this).data('href');
-            navClickAction(target, this);
-        })
-    })
-}
-
-function navClickAction(target, btn){
-    clickAnimate = true;
-    $('html, body').animate({
-        scrollTop: $(target).offset().top
-    },2000, function(){
-        // complete
-        clickAnimate = false;
-    });
-
-    $('.navbar-nav a').each(function () {
-        $(this).removeClass('active');
-    });
-    $(btn).addClass('active');
-}
-
-$("#web-overlay-btn").click(function(){
-    rendering = false;
-    setOverlay('web');
-    return false;
-});
-
-function setOverlay(cat){
-    //$('.overlay').css("top", 0);
-    $("canvas").addClass('d-none');
-    $("#sections-container").addClass('d-none');
-    $('.overlay').addClass('overlay-animating');
-    $('.overlay').removeClass('overlay-animating-out');
-    $("#main-menu").fadeOut();
-    //$('.navbar-toggler').hide();
-    window.location.hash = '';
-
-    $('.overlay-container').load('web-dev.html');
-}
-
-$('.overlay a').click(function(){
-    $('.overlay-content').fadeOut(function() {
-        $('.overlay-content').remove();
-        closeOverlay();
-    });
-
-    return false
-});
-
-document.addEventListener('keydown', (e) => {
-    if(e.key === "²"){
-        $("#sections-container").removeClass('d-none');
-        window.location.hash = 'web-service';
-        $("canvas").removeClass('d-none');
-    }
-    if(e.key === "0"){
-        $('.overlay').addClass('overlay-animating');
-        $('.overlay').removeClass('overlay-animating-out');
-    }
-
-    if(e.key === "Escape"){
-        $('.overlay-content').fadeOut(function() {
-            $('.overlay-content').remove();
-            closeOverlay();
-        });
-    }
-
-});
-
-function closeOverlay(){
-    $("#sections-container").removeClass('d-none');
-    $("canvas").removeClass('d-none');
-    window.location.hash = 'web-service';
-    $('.overlay').removeClass('overlay-animating');
-    $('.overlay').addClass('overlay-animating-out');
-    $("#main-menu").fadeIn();
-    rendering = true;
-    animate();
-    //$('.navbar-toggler').show();
-}
-// LAYOUT </////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function init() {
     setRoom_01Loader();
@@ -170,6 +80,7 @@ function init() {
 
     pointLight = new THREE.PointLight( 0xffffff, 50, 2500 );
     pointLight.position.set( 200, 350, 200 );
+    pointLight.castShadow = true;
     scene.add( pointLight );
 
     room_02_Light = new THREE.PointLight( 0xee83e5, 20, 5000 );
@@ -192,6 +103,8 @@ function init() {
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.physicallyCorrectLights = true;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     renderer.outputEncoding = THREE.sRGBEncoding;
 
@@ -240,9 +153,6 @@ function init() {
     const renderPass = new RenderPass( scene, camera );
     composer.addPass(renderPass);
 
-    /*var sphereSize = 1;
-    var pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
-    scene.add( pointLightHelper );*/
 }
 
 function setRoom_1(){
@@ -271,6 +181,165 @@ function setRoom_1(){
     } );
 
     // model character
+    // character mats
+    let characterTopMat, characterBodyMat, characterBottomMat, shoesMat;
+    let bodyCharBase = textureLoader.load(assetsRoot + 'perso_Body_diffuse.png');
+    bodyCharBase.encoding = THREE.sRGBEncoding;
+
+    let bodyCharRough = textureLoader.load(assetsRoot + 'perso_Body_gloss.png');
+
+    let bodyCharNormal = textureLoader.load(assetsRoot + 'perso_Body_normal.png');
+    bodyCharNormal.encoding = THREE.sRGBEncoding;
+
+    characterBodyMat = new THREE.MeshPhysicalMaterial( {
+        color: 0xbb9166,
+        map: bodyCharBase,
+        roughness: 1,
+        roughnessMap: bodyCharRough,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: bodyCharNormal,
+        transparent: true
+    } );
+    characterBodyMat.skinning = true;
+
+    let topCharBase = textureLoader.load(assetsRoot + 'perso_Top_diffuse.png');
+    topCharBase.encoding = THREE.sRGBEncoding;
+
+    let topCharRough = textureLoader.load(assetsRoot + 'perso_Top_gloss.png');
+    topCharRough.encoding = THREE.sRGBEncoding;
+
+    let topCharNormal = textureLoader.load(assetsRoot + 'perso_Top_normal.png');
+    topCharNormal.encoding = THREE.sRGBEncoding;
+
+    characterTopMat = new THREE.MeshStandardMaterial( {
+        color: 0xbb9166,
+        map: topCharBase,
+        roughness: 1,
+        roughnessMap: topCharRough,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: topCharNormal
+    } );
+    characterTopMat.skinning = true;
+
+    let bottomCharBase = textureLoader.load(assetsRoot + 'perso_Bottom_diffuse.png');
+    bottomCharBase.encoding = THREE.sRGBEncoding;
+
+    let bottomCharRough = textureLoader.load(assetsRoot + 'perso_Bottom_gloss.png');
+    bottomCharRough.encoding = THREE.sRGBEncoding;
+
+    let bottomCharNormal = textureLoader.load(assetsRoot + 'perso_Bottom_normal.png');
+    bottomCharNormal.encoding = THREE.sRGBEncoding;
+
+    characterBottomMat = new THREE.MeshStandardMaterial( {
+        color: 0xbb9166,
+        map: bottomCharBase,
+        roughness: 1,
+        roughnessMap: bottomCharRough,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: bottomCharNormal
+    } );
+    characterBottomMat.skinning = true;
+
+    let shoesCharBase = textureLoader.load(assetsRoot + 'perso_Shoes_diffuse.png');
+    shoesCharBase.encoding = THREE.sRGBEncoding;
+
+    shoesMat = new THREE.MeshStandardMaterial( {
+        color: 0xbb9166,
+        map: shoesCharBase,
+    } );
+    shoesMat.skinning = true;
+
+
+
+    /*let testMat_01 = [
+        new THREE.MeshStandardMaterial( {
+            color: 0xbb9166,
+            skinning: true
+        }),
+        new THREE.MeshStandardMaterial( {
+            color: 'red',
+            skinning: true
+        }),
+        new THREE.MeshStandardMaterial( {
+            color: 'blue',
+            skinning: true
+        }),
+        new THREE.MeshStandardMaterial( {
+            color: 'green',
+            skinning: true
+        }),
+        new THREE.MeshStandardMaterial( {
+            color: 'orange',
+            skinning: true
+        }),
+        new THREE.MeshStandardMaterial( {
+            color: 'yellow',
+            skinning: true
+        })
+    ];
+    //testMat_01.skinning = true;
+
+    let idleAnim;
+
+    let sittingAnnim;
+    let newAvatar =[];
+    fbxLoader.load( assetsRoot + 'sitting_pose.fbx', function ( sitAnim ) {
+        sitAnim.traverse( function ( childSit ) {
+
+        });
+        sittingAnnim = sitAnim.animations[ 0 ];
+
+        fbxLoader.load( assetsRoot + 'Idle-room-01.fbx', function ( object ) {
+
+            object.traverse( function ( child ) {
+
+                if ( child.isMesh ) {
+                    if(child.name === "CC_Base_Body") child.material = testMat_01;
+                    child.geometry.attributes.uv2 = child.geometry.attributes.uv;
+                    //child.material = testMat;
+                }
+                if (child.isBone) {
+                    //console.log(child.name);
+                    if (child.name === 'CC_Base_Head') {
+                        //console.log(child);
+                        neck = child;
+                    }
+                }
+
+            } );
+
+            //console.log(newObject);
+            //scene.add( newObject );
+
+
+            let newObject = new SkeletonUtils.clone(object);
+            console.log(object);
+            console.log(newObject);
+            scene.add( newObject );
+
+            mixer = new THREE.AnimationMixer( object );
+            idleAnim = object.animations[ 0 ];
+            let action = mixer.clipAction(idleAnim);
+            action.play();
+
+
+
+            scene.add( object );
+            object.position.z = 118.113;
+            object.position.x = 19.428;
+            object.rotation.y = 90;
+
+
+
+        } );
+
+    });*/
+
+    //console.log(CharacterInstancer.testMe());
+
     let mainCharSetup = {
         castShadow: true,
         receiveShadow: false,
@@ -313,7 +382,6 @@ function setRoom_1(){
             },{
                 type: 'std',
                 suffix: '_Eyelash',
-                normalMap: false,
                 transparent: true
             },
         ],
@@ -339,6 +407,8 @@ function setRoom_1(){
 
     new CharacterInstancer.loadCharacter( mainCharSetup, loadingManager_r1);
     new CharacterInstancer.loadAnimation('bruce', 'room-01-pose', loadingManager_r1);
+    //console.log(newCharacter);
+
 
     let rocketBase = textureLoader.load( assetsRoot + 'rocket_BaseColor.jpg' );
     rocketBase.encoding = THREE.sRGBEncoding;
@@ -365,6 +435,7 @@ function setRoom_1(){
 
             if ( child.isMesh ) {
                 child.material = rocketMaterial;
+                //child.castShadow = true;
             }
         } );
         scene.add( object );
@@ -469,238 +540,6 @@ function setRoom_1(){
     });
 }
 
-function setRoom_2(){
-    let textureLoader = new THREE.TextureLoader(loadingManager_r2);
-    let fbxLoader = new FBXLoader(loadingManager_r2);
-    let diffuseMap;
-
-    diffuseMap = textureLoader.load( assetsRoot + 'concrete.jpg' );
-    diffuseMap.wrapS = diffuseMap.wrapT = THREE.RepeatWrapping;
-    diffuseMap.offset.set( 0, 0 );
-    let lightMap = textureLoader.load( assetsRoot + 'room-02_lm.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
-    let concreteRough = textureLoader.load( assetsRoot + 'concrete.jpg' );
-    concreteRough.wrapS = concreteRough.wrapT = THREE.RepeatWrapping;
-    concreteRough.offset.set( 0, 0 );
-    let concreteNormal = textureLoader.load( assetsRoot + 'concrete_normal.jpg' );
-    concreteNormal.wrapS = concreteNormal.wrapT = THREE.RepeatWrapping;
-    concreteNormal.offset.set( 0, 0 );
-
-    let room_02_floor = new THREE.MeshStandardMaterial( {
-        color: 0x740900,
-        //map: diffuseMap,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 1,
-        normalMap: concreteNormal
-    } );
-
-    let room_02_walls = new THREE.MeshStandardMaterial( {
-        color: 0x1c1c1c,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 0.5,
-        normalMap: concreteNormal
-    } );
-
-    let room_02_doors = new THREE.MeshStandardMaterial( {
-        //color: 0xff6f17,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.3,
-    } );
-
-    let room_02_frames = new THREE.MeshStandardMaterial( {
-        color: 0x474747,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 1,
-        normalMap: concreteNormal,
-        metalnessMap: concreteRough
-    } );
-
-    let room_02_baseboard = new THREE.MeshStandardMaterial( {
-        color: 0x616161,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 1,
-        normalMap: concreteNormal,
-    } );
-
-    let room_02_ceil = new THREE.MeshStandardMaterial( {
-        color: 0x616161,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1
-    } );
-
-    let room_02_light = new THREE.MeshBasicMaterial( {
-        //color: 0x616161,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        aoMapIntensity: 0.5,
-        lightMapIntensity: 0.5,
-        emissive: 0xffffff,
-        emissiveIntensity: 10
-    } );
-
-
-    fbxLoader.load( assetsRoot + 'room-02.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                //console.log(child);
-                if(child.name === "floor")child.material = room_02_floor;
-                //if(child.name === "cover")child.material = room_02_floor;
-                if(child.name === "wall_debris" || child.name === "cover")child.material = room_02_walls;
-                if(child.name === "doors_code")child.material = room_02_doors;
-                if(child.name === "frames")child.material = room_02_frames;
-                if(child.name === "baseboard")child.material = room_02_baseboard;
-                if(child.name === "ceil")child.material = room_02_ceil;
-                if(child.name === "lights")child.material = room_02_light;
-
-                //child.receiveShadow = true;
-            }
-
-        } );
-
-        scene.add( object );
-
-    } );
-
-    lightMap = textureLoader.load( assetsRoot + 'room-02_assets_lm.jpg' );
-    let illuMap = textureLoader.load( assetsRoot + 'room-02_assets_illu.jpg' );
-    diffuseMap = textureLoader.load( assetsRoot + 'room-02_assets_diff.jpg' );
-    let assetsPBRMap = textureLoader.load( assetsRoot + 'room-02_assets_pbr.png' );
-
-    let room_02_assets = new THREE.MeshStandardMaterial( {
-        //color: 0x1a1515,
-        map: diffuseMap,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        //roughnessMap: assetsPBRMap,
-        roughness: 1,
-        //metalnessMap: assetsPBRMap,
-        //metalness: 1,
-        aoMapIntensity: 1,
-        lightMapIntensity: 1,
-        //emissiveIntensity: 10,
-        //emissiveMap: illuMap,
-        //emissive: 0xffffff,
-        //envMap: mainEnv,
-        envMapIntensity: 0,
-    } );
-
-    fbxLoader.load( assetsRoot + 'room-02-assets.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                if(child.name === "rooms-02-assets"){
-                    child.material = room_02_assets;
-                }else{
-                    child.material = setPlateMaterial(lightMap, child.name);
-                }
-            }
-
-        } );
-
-        scene.add( object );
-
-    } );
-
-    let idleAnim;
-
-    let body_lm = textureLoader.load( assetsRoot + 'char-02-lm.jpg' );
-    let body_char_02 = new THREE.MeshPhongMaterial({
-            map: body_lm
-        }
-
-    );
-    body_char_02.skinning = true;
-    fbxLoader.load( assetsRoot + 'sit.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                if(child.name === 'Body') {
-                    child.material = body_char_02;
-                }
-            }
-            if (child.isBone) {
-                if (child.name === 'mixamorig_Head') {
-                    neck_r2 = child;
-                }
-                if (child.name === 'mixamorigSpine') {
-                    waist_r2 = child;
-                }
-            }
-
-        } );
-
-        mixer_b = new THREE.AnimationMixer( object );
-
-        idleAnim = object.animations[ 0 ];
-        idleAnim.tracks.splice(30, 3);
-        //idleAnim.tracks.splice(4, 1);
-        let action = mixer_b.clipAction(idleAnim);
-        //console.log(idleAnim);
-        action.play();;
-        scene.add( object );
-        //scene.add( room_2_char );
-    } );
-
-    diffuseMap = textureLoader.load( assetsRoot + 'plant_diff.png' );
-    assetsPBRMap = textureLoader.load( assetsRoot + 'plant_pbr.png' );
-    //let normalMap = textureLoader.load( assetsRoot + 'plant_norm.png' );
-
-    let plant_mat = new THREE.MeshStandardMaterial( {
-        //color: 0x616161,
-        map: diffuseMap,
-        lightMap: assetsPBRMap,
-        roughnessMap: assetsPBRMap,
-        aoMap: assetsPBRMap,
-        aoMapIntensity: 1,
-        lightMapIntensity: 1,
-        //normalMap: normalMap,
-        envMap: mainEnv,
-        envMapIntensity: 1,
-    } );
-    plant_mat.transparent = true;
-    plant_mat.side = THREE.DoubleSide;
-    plant_mat.alphaTest = 0.5;
-    fbxLoader.load( assetsRoot + 'plant.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                child.material = plant_mat;
-            }
-
-        } );
-        //object.position.x += 400;
-        scene.add( object );
-
-    } );
-
-}
 
 // PRELOADERS
 function setRoom_01Loader(){
@@ -717,6 +556,7 @@ function setRoom_01Loader(){
     };
 
     loadingManager_r1.onLoad =  () => {
+
         room_01_character = CharacterInstancer.instanceCharacter('bruce');
         let room_01_animation = CharacterInstancer.getAnimation('room-01-pose');
         mixer_room_01 = new THREE.AnimationMixer( room_01_character );
@@ -725,8 +565,8 @@ function setRoom_01Loader(){
 
         scene.add( room_01_character );
         room_01_character.position.z = 118.113;
-        room_01_character.position.x = 9;
-        room_01_character.rotation.y = 2.356;
+        room_01_character.position.x = 19.428;
+        room_01_character.rotation.y = 90;
 
         head_room_01_bone = CharacterInstancer.setMouseFollower(room_01_character, 'CC_Base_Head', 'room-01');
 
@@ -738,51 +578,11 @@ function setRoom_01Loader(){
         $('#home-btn').removeClass('invisible');
         $('#about-btn').removeClass('invisible');
         animate();
-        setRoom_02Loader();
     } ;
 }
 
-function setRoom_02Loader(){
-    loadingManager_r2 = new THREE.LoadingManager();
-    setRoom_2();
-
-    loadingManager_r2.onStart = (url, itemsLoaded, itemsTotal) =>{
-        //console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
-    };
-
-    loadingManager_r2.onProgress = function ( url, itemsLoaded, itemsTotal ) {
-
-        //console.log( 'Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
-
-    };
-
-    loadingManager_r2.onLoad =  () => {
-        console.log('Loading room 02 completed');
-        $('#web-btn').removeClass('invisible');
-        $('#web-service').removeClass('d-none');
-    } ;
-}
 //--> PRELOADERS
 
-function setPlateMaterial(lightMap, name){
-
-    let dynamicTexture = new THREEx.DynamicTexture(256, 256);
-    dynamicTexture.context.font	= "bolder 50px Anton";
-    dynamicTexture.texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    dynamicTexture.clear('#090909').drawText(webSectionsPlates[name], undefined, 150, '#b01c1c');
-
-    let plateMaterial = new THREE.MeshStandardMaterial( {
-        //color: 0x1a1515,
-        map: dynamicTexture.texture,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        roughness: 1,
-        aoMapIntensity: 1,
-        lightMapIntensity: 1,
-        envMapIntensity: 0,
-    } );
-    return plateMaterial;
-}
 
 function onDocumentMouseMove( event ) {
 
@@ -792,8 +592,9 @@ function onDocumentMouseMove( event ) {
     mY = event.clientY;
 
     CharacterInstancer.moveHead('CC_Base_Head','room-01', 30, mX-400, mY-300);
-    //if ( neck ) moveJoint(neck, 30, -400, -300);
-    //if ( neck_r2 ) moveJoint(neck_r2, 60, -200, -300);
+
+    if ( head_room_01_bone ) moveJoint(head_room_01_bone, 30, -400, -300);
+    if ( neck_r2 ) moveJoint(neck_r2, 60, -200, -300);
 }
 
 function onWindowResize() {
@@ -827,35 +628,35 @@ function updateCamera(move){
     let newLookAtZ;
 
     //if(move === "up" && window.scrollY === 0){
-        // hack jquery
+    // hack jquery
     //}else{
-        if(window.scrollY < maxYScrollScene_a){
-            //console.log("A scope");
-            newPosZ = camPositions[0].z + (window.scrollY * a_distance.z)/maxYScrollScene_a;
-            newPosY = camPositions[0].y + (window.scrollY * a_distance.y)/maxYScrollScene_a;
-            newLookAtZ = lookAtInit.z + (window.scrollY * a_LA_Distance.z)/maxYScrollScene_a;
+    if(window.scrollY < maxYScrollScene_a){
+        //console.log("A scope");
+        newPosZ = camPositions[0].z + (window.scrollY * a_distance.z)/maxYScrollScene_a;
+        newPosY = camPositions[0].y + (window.scrollY * a_distance.y)/maxYScrollScene_a;
+        newLookAtZ = lookAtInit.z + (window.scrollY * a_LA_Distance.z)/maxYScrollScene_a;
 
-            camera.position.z = newPosZ;
-            camera.position.y = newPosY;
-            camera.lookAt( lookAtInit.x, lookAtInit.y, newLookAtZ );
-            //console.log("launch - About");
-        }
-        if(window.scrollY > startYScrollScene_b && window.scrollY < maxYScrollScene_b + 100){
-            //console.log("B scope");
-            //console.log(window.scrollY - startYScrollScene_b);
-            newPosX = camPositions[0].x + ((window.scrollY - startYScrollScene_b) * b_distance.x)/b_scrollPix;
-            newPosZ = scopeB_pos.z + ((window.scrollY - startYScrollScene_b) * b_distance.z)/b_scrollPix;
-            newPosY = scopeB_pos.y + ((window.scrollY - startYScrollScene_b) * b_distance.y)/b_scrollPix;
-            newLookAtX = (lookAtInit.x + a_LA_Distance.x)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.x)/b_scrollPix;
-            newLookAtY = (lookAtInit.y + a_LA_Distance.y)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.y)/b_scrollPix;
-            newLookAtZ = (lookAtInit.z + a_LA_Distance.z) + ((window.scrollY - startYScrollScene_b) * b_LA_Distance.z)/b_scrollPix;
-            camera.lookAt( newLookAtX, newLookAtY, newLookAtZ );
+        camera.position.z = newPosZ;
+        camera.position.y = newPosY;
+        camera.lookAt( lookAtInit.x, lookAtInit.y, newLookAtZ );
+        //console.log("launch - About");
+    }
+    if(window.scrollY > startYScrollScene_b && window.scrollY < maxYScrollScene_b + 100){
+        //console.log("B scope");
+        //console.log(window.scrollY - startYScrollScene_b);
+        newPosX = camPositions[0].x + ((window.scrollY - startYScrollScene_b) * b_distance.x)/b_scrollPix;
+        newPosZ = scopeB_pos.z + ((window.scrollY - startYScrollScene_b) * b_distance.z)/b_scrollPix;
+        newPosY = scopeB_pos.y + ((window.scrollY - startYScrollScene_b) * b_distance.y)/b_scrollPix;
+        newLookAtX = (lookAtInit.x + a_LA_Distance.x)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.x)/b_scrollPix;
+        newLookAtY = (lookAtInit.y + a_LA_Distance.y)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.y)/b_scrollPix;
+        newLookAtZ = (lookAtInit.z + a_LA_Distance.z) + ((window.scrollY - startYScrollScene_b) * b_LA_Distance.z)/b_scrollPix;
+        camera.lookAt( newLookAtX, newLookAtY, newLookAtZ );
 
-            camera.position.x = newPosX;
-            camera.position.y = newPosY;
-            camera.position.z = newPosZ;
-            console.log("web");
-        }
+        camera.position.x = newPosX;
+        camera.position.y = newPosY;
+        camera.position.z = newPosZ;
+        console.log("web");
+    }
     //}
 
 
@@ -902,15 +703,7 @@ function animate() {
 
     }
     TWEEN.update();
-    if(clickAnimate){
-        if(window.scrollY > 0){
-            //console.log('anim click = true');
-            updateCamera();
-        }
-    }else{
-        //console.log('anim click = false');
-        updateCamera();
-    }
+
 
     //camera.position.set( 0, camY, 150);
     //console.log(camera.rotation.z);
@@ -958,8 +751,61 @@ function tweenCompleted(){
 
 function onTransitionEnd( event ) {
     $('#sections-container').fadeIn();
-    setHtmlDisplay();
+    //setHtmlDisplay();
     event.target.remove();
+}
+
+function moveJoint(joint, degreeLimit, fineTuneX, fineTuneY) {
+    //console.log(joint);
+    let degrees = getMouseDegrees(mX + fineTuneX, mY + fineTuneY, degreeLimit);
+    joint.rotation.y = THREE.Math.degToRad(degrees.x);
+    joint.rotation.x = THREE.Math.degToRad(degrees.y);
+}
+
+function getMouseDegrees(x, y, degreeLimit) {
+    let dx = 0,
+        dy = 0,
+        xdiff,
+        xPercentage,
+        ydiff,
+        yPercentage;
+
+    //x -= 400;
+    //y -= 300;
+
+    let w = { x: window.innerWidth, y: window.innerHeight };
+
+    // Left (Rotates neck left between 0 and -degreeLimit)
+
+    // 1. If cursor is in the left half of screen
+    if (x <= w.x / 2) {
+        // 2. Get the difference between middle of screen and cursor position
+        xdiff = w.x / 2 - x;
+        // 3. Find the percentage of that difference (percentage toward edge of screen)
+        xPercentage = (xdiff / (w.x  / 2)) * 100;
+        // 4. Convert that to a percentage of the maximum rotation we allow for the neck
+        dx = ((degreeLimit * xPercentage) / 100) * -1; }
+// Right (Rotates neck right between 0 and degreeLimit)
+    if (x >= w.x  / 2) {
+        xdiff = x - w.x / 2;
+        xPercentage = (xdiff / (w.x / 2)) * 100;
+        dx = (degreeLimit * xPercentage) / 100;
+    }
+    // Up (Rotates neck up between 0 and -degreeLimit)
+    if (y <= w.y / 2) {
+        ydiff = w.y / 2 - y;
+        yPercentage = (ydiff / (w.y / 2)) * 100;
+        // Note that I cut degreeLimit in half when she looks up
+        dy = (((degreeLimit * 0.5) * yPercentage) / 100) * -1;
+    }
+
+    // Down (Rotates neck down between 0 and degreeLimit)
+    if (y >= w.y / 2) {
+        ydiff = y - w.y/ 2;
+        yPercentage = (ydiff / (w.y / 2)) * 100;
+        dy = (degreeLimit * yPercentage) / 100;
+    }
+    return { x: dx, y: dy };
 }
 
 function stopRendering(){
