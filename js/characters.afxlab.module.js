@@ -52,7 +52,6 @@ let getAnimation = function(name){
     return animations[name];
 };
 
-
 let moveHead = function (bone, room, degreeLimit, mX, mY) {
     if(mouseBone[room +  '_' + bone]){
         let degrees = getMouseDegrees(mX, mY, degreeLimit);
