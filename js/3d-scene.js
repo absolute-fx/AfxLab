@@ -8,7 +8,7 @@ import * as CharacterInstancer from '../js/characters.afxlab.module.js';
 
 let container;
 let loadingManager_r1, loadingManager_r2;
-let camera, scene, renderer, ambientLight, pointLight, pointLight2, pointLight3, composer, room_02_Light;
+let camera, scene, renderer, ambientLight, pointLight, pointLight2, pointLight3, pointLight4, composer, room_02_Light;
 let mX, mY;
 let mixer_room_01, mixer_b;
 let mouseX = 0;
@@ -17,6 +17,8 @@ let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
 let targetX = 0;
 let targetY = 0;
+let mTargetX = 0;
+let mTargetY = 0;
 let lookAtInit = { x: 0, y:110, z:85 };
 let mainEnv;
 let tweenPos, tweenRot;
@@ -50,8 +52,12 @@ const webSectionsPlates = {
     "plate-R-04": "ELECTRON"
 };
 
+let raycaster_r1;
+let mouse_over_char_room_01;
 let room_01_character;
-let sceneCastShadows = true;
+let action_room_01 = {};
+let room_01_animation_idle, room_01_animation_append;
+let room_01_happening = false;
 
 setNav();
 
@@ -157,6 +163,7 @@ function init() {
     camera = new THREE.PerspectiveCamera( 34, window.innerWidth / window.innerHeight, 1, 10000 );
     camera.position.set( camPositions[0].x, camPositions[0].y, camPositions[0].z);
     camera.lookAt( lookAtInit.x, lookAtInit.y, lookAtInit.z );
+    camera.updateMatrixWorld();
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0x221e22 );
@@ -179,6 +186,10 @@ function init() {
     pointLight3 = new THREE.PointLight( 0xffffff, 20, 350 );
     pointLight3.position.set( -275, 50, 235 );
     scene.add( pointLight3 );
+
+    pointLight4 = new THREE.PointLight( 0xffffff, 20, 250 );
+    pointLight4.position.set( -275, 50, -50 );
+    scene.add( pointLight4 );
 
     room_02_Light = new THREE.PointLight( 0xee83e5, 20, 5000 );
     room_02_Light.position.set( -200, -300, -50 );
@@ -248,8 +259,10 @@ function init() {
     const renderPass = new RenderPass( scene, camera );
     composer.addPass(renderPass);
 
+    raycaster_r1 = new THREE.Raycaster();
+    mouse_over_char_room_01 = new THREE.Vector2();
     /*var sphereSize = 10;
-    var pointLightHelper = new THREE.PointLightHelper( pointLight2, sphereSize );
+    var pointLightHelper = new THREE.PointLightHelper( pointLight4, sphereSize );
     scene.add( pointLightHelper );*/
 }
 
@@ -423,7 +436,9 @@ function setRoom_1(){
 
     new CharacterInstancer.loadCharacter( mainCharSetup, loadingManager_r1);
     new CharacterInstancer.loadAnimation('bruce', 'room-01-pose', loadingManager_r1);
+    new CharacterInstancer.loadAnimation('bruce', 'room-01-pose-append', loadingManager_r1);
 
+    // Rocket
     let rocketBase = textureLoader.load( assetsRoot + 'rocket_BaseColor.jpg' );
     rocketBase.encoding = THREE.sRGBEncoding;
 
@@ -440,7 +455,7 @@ function setRoom_1(){
         metalness:0.9,
         metalnessMap: rocketPbr,
         envMap: mainEnv,
-        envMapIntensity: 0.5,
+        envMapIntensity: .9,
         normalMap: rocketNormal
     } );
 
@@ -469,6 +484,7 @@ function setRoom_1(){
         scene.add( object );
     });
 
+    // tubes
     let tubesBase = textureLoader.load(assetsRoot + 'tubes.jpg');
     tubesBase.encoding = THREE.sRGBEncoding;
 
@@ -486,6 +502,7 @@ function setRoom_1(){
         scene.add( object );
     });
 
+    // electrical box
     let elcBoxBase = textureLoader.load(assetsRoot + 'electrical_box_BaseColor.png');
     elcBoxBase.encoding = THREE.sRGBEncoding;
 
@@ -522,35 +539,56 @@ function setRoom_1(){
         scene.add( object );
     });
 
-    let serverBase = textureLoader.load(assetsRoot + 'sever_BaseColor.png');
-    serverBase.encoding = THREE.sRGBEncoding;
+    // control panel
+    let cpBase = textureLoader.load(assetsRoot + 'cp_Base.jpg');
+    cpBase.encoding = THREE.sRGBEncoding;
 
-    let serverPbr = textureLoader.load(assetsRoot + 'server_pbr.png');
-    serverPbr.encoding = THREE.sRGBEncoding;
+    let cpPbr = textureLoader.load(assetsRoot + 'cp_mix.jpg',(texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()});
+    cpPbr.encoding = THREE.sRGBEncoding;
 
-    let serverEmi = textureLoader.load(assetsRoot + 'sever_Emissive.png');
-    serverEmi.encoding = THREE.sRGBEncoding;
+    let cpEmi = textureLoader.load(assetsRoot + 'cp_emi.jpg');
+    cpEmi.encoding = THREE.sRGBEncoding;
 
-    let serverMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x171819,
-        map: serverBase,
-        roughness: 0.5,
-        roughnessMap: serverPbr,
+    let cpNormal = textureLoader.load(assetsRoot + 'cp_Normal.jpg');
+    cpEmi.encoding = THREE.sRGBEncoding;
+
+    let cpMaterial = new THREE.MeshStandardMaterial({
+        //color: 0x171819,
+        aoMap: cpPbr,
+        aoIntensity: 10,
+        lightMap: cpPbr,
+        map: cpBase,
+        roughness: 1,
+        roughnessMap: cpPbr,
+        metalness: 1,
+        metalnessMap: cpPbr,
         envMap: mainEnv,
-        envMapIntensity: 0.5,
-        emissiveMap: serverEmi,
-        emissive: 0xffffff
+        envMapIntensity: 1,
+        emissiveMap: cpEmi,
+        emissive: 0xffffff,
+        normalMap: cpNormal
     });
 
-    fbxLoader.load(assetsRoot + 'server.fbx', function(object){
+    fbxLoader.load(assetsRoot + 'control-panel.fbx', function(object){
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
-                child.material = serverMaterial;
+                child.geometry.attributes.uv2 = child.geometry.attributes.uv;
+                child.material = cpMaterial;
             }
         } );
+        let cpLeft = object.clone();
+
+        object.position.z = -462.8;
+        object.position.x = -62;
+
+        cpLeft.position.z = 413.938;
+        cpLeft.position.x = -94.089;
+        cpLeft.rotation.y = 3.14159;
         scene.add( object );
+        scene.add( cpLeft );
     });
+
 }
 
 function setRoom_2(){
@@ -797,32 +835,48 @@ function setRoom_01Loader(){
     loadingManager_r1.onProgress = function ( url, itemsLoaded, itemsTotal ) {
 
         //console.log( 'Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
-
+        let percent = Math.round(itemsLoaded / itemsTotal * 100) + '%';
+        //console.log(percent);
+        $('#progress-bar').css('width', percent);
     };
 
     loadingManager_r1.onLoad =  () => {
-        room_01_character = CharacterInstancer.instanceCharacter('bruce');
-        let room_01_animation = CharacterInstancer.getAnimation('room-01-pose');
-        mixer_room_01 = new THREE.AnimationMixer( room_01_character );
-        let action = mixer_room_01.clipAction(room_01_animation);
-        action.play();
+        setTimeout(() =>{
+            $('#progress-bar').remove();
+            room_01_character = CharacterInstancer.instanceCharacter('bruce');
+            room_01_animation_idle = CharacterInstancer.getAnimation('room-01-pose');
+            room_01_animation_append = CharacterInstancer.getAnimation('room-01-pose-append');
 
-        scene.add( room_01_character );
-        room_01_character.position.z = 118.113;
-        room_01_character.position.x = 9;
-        room_01_character.rotation.y = 2.356;
+            mixer_room_01 = new THREE.AnimationMixer( room_01_character );
+            action_room_01['room-01-pose'] = mixer_room_01.clipAction(room_01_animation_idle);
+            //console.log(room_01_animation_append.tracks);
+            room_01_animation_append.tracks.splice(39, 1);
+            action_room_01['room-01-pose-append'] = mixer_room_01.clipAction(room_01_animation_append);
+            action_room_01['room-01-pose-append'].clampWhenFinished = true;
+            action_room_01['room-01-pose-append'].loop = THREE.LoopOnce;
+            action_room_01['room-01-pose'].play();
 
-        head_room_01_bone = CharacterInstancer.setMouseFollower(room_01_character, 'CC_Base_Head', 'room-01');
+            scene.add( room_01_character );
+            room_01_character.position.z = 118.113;
+            room_01_character.position.x = 9;
+            room_01_character.rotation.y = 2.356;
 
-        console.log('Loading room 01 completed');
-        const loadingScreen = document.getElementById( 'loading-screen' );
-        loadingScreen.classList.add( 'fade-out' );
-        loadingScreen.addEventListener( 'transitionend', onTransitionEnd );
-        $('.navbar').removeClass('invisible');
-        $('#home-btn').removeClass('invisible');
-        $('#about-btn').removeClass('invisible');
-        animate();
-        setRoom_02Loader();
+            head_room_01_bone = CharacterInstancer.setMouseFollower(room_01_character, 'CC_Base_Head', 'room-01');
+
+            console.log('Loading room 01 completed');
+            const loadingScreen = document.getElementById( 'loading-screen' );
+            loadingScreen.classList.add( 'fade-out' );
+            loadingScreen.addEventListener( 'transitionend', onTransitionEnd );
+            $('.navbar').removeClass('invisible');
+            $('#home-btn').removeClass('invisible');
+            $('#about-btn').removeClass('invisible');
+            animate();
+            setRoom_02Loader();
+
+            //intersects_r1 = raycaster_r1.intersectObjects( room_01_character );
+
+
+        },500)
     } ;
 }
 
@@ -869,13 +923,16 @@ function setPlateMaterial(lightMap, name){
 }
 
 function onDocumentMouseMove( event ) {
-
+    event.preventDefault();
     mouseX = ( event.clientX - windowHalfX )/5;
     mouseY = ( event.clientY - windowHalfY )/5;
     mX = event.clientX;
     mY = event.clientY;
 
-    CharacterInstancer.moveHead('CC_Base_Head','room-01', 30, mX-400, mY-300);
+    mouse_over_char_room_01.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse_over_char_room_01.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+    //CharacterInstancer.moveHead('CC_Base_Head','room-01', 30, mX-400, mY-300);
     //if ( neck ) moveJoint(neck, 30, -400, -300);
     //if ( neck_r2 ) moveJoint(neck_r2, 60, -200, -300);
 }
@@ -965,9 +1022,13 @@ function animate() {
         if(isNaN(mX)){
             x = windowHalfX + Math.cos(idleStore) * idleRadius;
             y = windowHalfY + Math.sin(idleStore) * idleRadius;
+
         }else{
             x = mX + Math.cos(idleStore) * idleRadius;
             y = mY + Math.sin(idleStore) * idleRadius;
+
+            CharacterInstancer.moveHead('CC_Base_Head','room-01', 30, followMouse().x-400, followMouse().y-500);
+
         }
 
         mouseX = ( x - windowHalfX )/5;
@@ -983,7 +1044,6 @@ function animate() {
         scene.rotation.y += idleSensibility * ( targetX - scene.rotation.y );
         scene.rotation.x += idleSensibility * ( targetY - scene.rotation.x );
         //console.log(camera.position.z);
-
     }
     TWEEN.update();
     if(clickAnimate){
@@ -996,15 +1056,19 @@ function animate() {
         updateCamera();
     }
 
-    //camera.position.set( 0, camY, 150);
-    //console.log(camera.rotation.z);
-    //renderer.render( scene, camera );
+    raycaster_r1.setFromCamera( mouse_over_char_room_01, camera );
+    let intersects_r1 = raycaster_r1.intersectObject( room_01_character, true );
+    if ( intersects_r1!== undefined ) {
+        if(intersects_r1.length > 0){
+            room_01_animAppend(0.5);
+        }
+    }
     composer.render();
     if(rendering) requestAnimationFrame( animate );
 }
 
 function transitionCam(){
-    rendering = false;
+    room_01_animAppend(0.2);
     //console.log('tween');
     /*if(actualPos === 0){
         tweenPos = new TWEEN.Tween( camera.position )
@@ -1048,4 +1112,51 @@ function onTransitionEnd( event ) {
 
 function stopRendering(){
     rendering = false;
+}
+
+function room_01_animAppend( duration){
+    if(!room_01_happening){
+        mixer_room_01.addEventListener( 'finished', restoreState );
+        action_room_01['room-01-pose'].fadeOut( duration );
+        action_room_01['room-01-pose-append']
+            .reset()
+            .fadeIn( duration )
+            .play();
+        room_01_happening = true;
+        xT =  0,
+        yT =  0;
+        setTimeout(() =>{room_01_happening = false}, 1000*15);
+    }
+}
+
+function restoreState(){
+    mixer_room_01.removeEventListener( 'finished', restoreState );
+    action_room_01['room-01-pose-append'].fadeOut( 0.5 );
+    action_room_01['room-01-pose']
+        .reset()
+        .fadeIn( 1 )
+        .play();
+}
+
+let xT = void 0,
+    yT = void 0,
+    dx = void 0,
+    dy = void 0;
+
+function followMouse() {
+    if(!xT || !yT) {
+        xT = mX;
+        yT = mY;
+    } else {
+        dx = (mX - xT) * 0.125;
+        dy = (mY - yT) * 0.125;
+        if(Math.abs(dx) + Math.abs(dy) < 0.1) {
+            xT = mX;
+            yT = mY;
+        } else {
+            xT += dx;
+            yT += dy;
+        }
+    }
+    return {x: xT, y: yT}
 }

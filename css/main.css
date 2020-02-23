@@ -133,14 +133,25 @@ a, button, input, select {
   position: relative;
   left: 50%;
   top: 50%;
-  width: 150px;
-  height: 150px;
-  margin: -75px 0 0 -75px;
+  width: 100px;
+  height: 100px;
+  margin: -50px 0 0 -50px;
   border-radius: 50%;
   border: 3px solid transparent;
   border-top-color: #9370DB;
   -webkit-animation: spin 2s linear infinite;
   animation: spin 2s linear infinite; }
+
+.progress {
+  background-color: #111111;
+  width: 250px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 55vh;
+  height: 3px; }
+
+.progress-bar {
+  background-color: #FF00FF; }
 
 #loader:before {
   content: "";

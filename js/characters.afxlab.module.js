@@ -7,6 +7,7 @@ let mainCharacter = {};
 let animations = {};
 let assetsRoot;
 let mouseBone = {};
+
 let loadCharacter = function(setup, loadingManager){
     assetsRoot = setup.root;
     let path = setup.root + "characters/" + setup.name + '/';
@@ -76,7 +77,7 @@ function setMaterial(root, envMap, childName, newMap, loadingManager){
         if(!('metalnessMap' in newMap) || newMap.metalnessMap) materialData.metalnessMap = mixedTexture;
         if(!('aoMap' in newMap) || newMap.aoMap) materialData.aoMap = mixedTexture;
         if(!('normalMap' in newMap) || newMap.normalMap) materialData.normalMap = textureLoader.load(root + childName + '_normal.jpg');
-        materialData.roughnessIntensity = (('roughness' in newMap)) ? newMap.roughness : 1;
+        materialData.roughness = (('roughness' in newMap)) ? newMap.roughness : 1;
         materialData.envMapIntensity = (('envMapIntensity' in newMap)) ? newMap.envMapIntensity : 1;
         materialData.metalness = (('metalness' in newMap)) ? newMap.metalness : 1;
         materialData.aoMapIntensity = (('aoMapIntensity' in newMap)) ? newMap.aoMapIntensity : 1;
@@ -105,7 +106,7 @@ function setMaterial(root, envMap, childName, newMap, loadingManager){
             if(!('metalnessMap' in map) || map.metalnessMap) materialData.metalnessMap = mixedTexture;
             if(!('aoMap' in map) || map.aoMap) materialData.aoMap = mixedTexture;
             if(!('normalMap' in map) || map.normalMap) materialData.normalMap = textureLoader.load(root + childName + map.suffix + '_normal.jpg');
-            materialData.roughnessIntensity = (('roughness' in map)) ? map.roughness : 1;
+            materialData.roughness = (('roughness' in map)) ? map.roughness : 1;
             materialData.envMapIntensity = (('envMapIntensity' in map)) ? map.envMapIntensity : 1;
             materialData.metalness = (('metalness' in map)) ? map.metalness : 1;
             materialData.aoMapIntensity = (('aoMapIntensity' in map)) ? map.aoMapIntensity : 1;
