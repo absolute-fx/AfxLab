@@ -8,9 +8,10 @@ import * as CharacterInstancer from '../js/characters.afxlab.module.js';
 
 let container;
 let loadingManager_r1, loadingManager_r2;
-let camera, scene, renderer, ambientLight, pointLight, pointLight2, pointLight3, pointLight4, composer, room_02_Light;
+let camera, scene, renderer, ambientLight, pointLight, pointLight2, pointLight3, pointLight4, composer;
+let room_02_Light, room_02_Light_2, room_02_Light_3, room_02_Light_4;
 let mX, mY;
-let mixer_room_01, mixer_b;
+let mixer_room_01, mixer_room_02, mixer_b;
 let mouseX = 0;
 let mouseY = 0;
 let windowHalfX = window.innerWidth / 2;
@@ -38,7 +39,7 @@ const idleSpeed = 0.003;
 const idleSensibility = 0.025;
 let idleStore = 0;
 let neck, waist, neck_r2, waist_r2;
-let head_room_01_bone;
+let head_room_01_bone, head_room_02_bone;
 let rendering = true;
 
 const webSectionsPlates = {
@@ -52,13 +53,19 @@ const webSectionsPlates = {
     "plate-R-04": "ELECTRON"
 };
 
+let concreteRough;
+let concreteNormal;
+let wallNormal;
+let wallRoughness;
+
 let raycaster_r1;
 let mouse_over_char_room_01;
-let room_01_character;
+let room_01_character, room_02_character;
 let action_room_01 = {};
-let room_01_animation_idle, room_01_animation_append;
+let action_room_02 = {};
+let room_01_animation_idle, room_01_animation_append, room_02_animation_idle;
 let room_01_happening = false;
-
+let mainCharSetup;
 setNav();
 
 // LAYOUT >/////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,9 +198,27 @@ function init() {
     pointLight4.position.set( -275, 50, -50 );
     scene.add( pointLight4 );
 
-    room_02_Light = new THREE.PointLight( 0xee83e5, 20, 5000 );
-    room_02_Light.position.set( -200, -300, -50 );
+    room_02_Light = new THREE.PointLight( 0xffffff, 20, 5000 );
+    room_02_Light.position.set( -100, -250, -208);
     scene.add( room_02_Light );
+
+    room_02_Light_2 = new THREE.PointLight( 0xffffff, 20, 5000 );
+    room_02_Light_2.position.set( -300, -250, -208 );
+    scene.add( room_02_Light_2 );
+
+    room_02_Light_3 = new THREE.PointLight( 0xffffff, 20, 5000 );
+    room_02_Light_3.position.set( -100, -250, 115);
+    scene.add( room_02_Light_3 );
+
+    room_02_Light_4 = new THREE.PointLight( 0xffffff, 20, 5000 );
+    room_02_Light_4.position.set( -300, -250, 115 );
+    scene.add( room_02_Light_4 );
+
+    /*var sphereSize = 10;
+    var pointLightHelper = new THREE.PointLightHelper( room_02_Light, sphereSize );
+    scene.add( pointLightHelper );
+    var pointLightHelper2 = new THREE.PointLightHelper( room_02_Light_2, sphereSize );
+    scene.add( pointLightHelper2 );*/
 
     // main materials
     let mainLoaderEnv = new THREE.CubeTextureLoader();
@@ -271,25 +296,25 @@ function setRoom_1(){
     let textureLoader = new THREE.TextureLoader(loadingManager_r1);
     let aoMap = textureLoader.load( assetsRoot + 'room-main-ao.jpg' );
 
-    let concreteRough = textureLoader.load( assetsRoot + 'concrete.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    concreteRough = textureLoader.load( assetsRoot + 'concrete.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
     concreteRough.wrapS = concreteRough.wrapT = THREE.RepeatWrapping;
     concreteRough.offset.set( 0, 0 );
-    let concreteNormal = textureLoader.load( assetsRoot + 'concrete_normal.jpg',(texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    concreteNormal = textureLoader.load( assetsRoot + 'concrete_normal.jpg',(texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
     concreteNormal.wrapS = concreteNormal.wrapT = THREE.RepeatWrapping;
     concreteNormal.offset.set( 0, 0 );
 
-    let wallNormal = textureLoader.load( assetsRoot + 'wall-03-normal.jpg' );
+    wallNormal = textureLoader.load( assetsRoot + 'wall-03-normal.jpg' );
     wallNormal.wrapS = wallNormal.wrapT = THREE.RepeatWrapping;
     wallNormal.offset.set( 0, 0 );
 
-    let wallRoughness = textureLoader.load( assetsRoot + 'roughness-wall.jpg' );
+    wallRoughness = textureLoader.load( assetsRoot + 'roughness-wall.jpg' );
     wallRoughness.wrapS = wallRoughness.wrapT = THREE.RepeatWrapping;
     wallRoughness.offset.set( 0, 0 );
 
     let wallMaterial = new THREE.MeshStandardMaterial( {
         color: 0x19021c,
         aoMap: aoMap,
-        aoIntensity: 10,
+        aoMapIntensity: 1,
         lightMap: aoMap,
         lightMapIntensity: 20,
         envMap: mainEnv,
@@ -308,7 +333,7 @@ function setRoom_1(){
         envMapIntensity: 1,
         normalMap: concreteNormal,
         aoMap: aoMap,
-        aoIntensity: 10,
+        aoMapIntensity: 1,
         lightMap: aoMap,
         lightMapIntensity: 20,
         //map: diffuseMap
@@ -321,7 +346,7 @@ function setRoom_1(){
         envMapIntensity: 1,
         normalMap: concreteNormal,
         aoMap: aoMap,
-        aoIntensity: 10,
+        aoMapIntensity: 1,
         lightMap: aoMap,
         lightMapIntensity: 20,
         //map: diffuseMap
@@ -334,7 +359,7 @@ function setRoom_1(){
         envMapIntensity: 0.2,
         normalMap: concreteNormal,
         aoMap: aoMap,
-        aoIntensity: 10,
+        aoMapIntensity: 1,
         lightMap: aoMap,
         lightMapIntensity: 20,
         //map: diffuseMap
@@ -362,13 +387,13 @@ function setRoom_1(){
                 child.receiveShadow = true;
             }
         } );
-        console.log(object)
+        //console.log(object)
         scene.add( object );
 
     } );
 
     // model character
-    let mainCharSetup = {
+    mainCharSetup = {
         castShadow: false,
         receiveShadow: false,
         name: 'bruce',
@@ -555,7 +580,7 @@ function setRoom_1(){
     let cpMaterial = new THREE.MeshStandardMaterial({
         //color: 0x171819,
         aoMap: cpPbr,
-        aoIntensity: 10,
+        aoMapIntensity: 1,
         lightMap: cpPbr,
         map: cpBase,
         roughness: 1,
@@ -595,8 +620,11 @@ function setRoom_2(){
     let textureLoader = new THREE.TextureLoader(loadingManager_r2);
     let fbxLoader = new FBXLoader(loadingManager_r2);
     let diffuseMap;
+    let lightMap;
 
-    diffuseMap = textureLoader.load( assetsRoot + 'concrete.jpg' );
+    new CharacterInstancer.loadAnimation('bruce', 'room-02-pose', loadingManager_r2);
+
+    /*diffuseMap = textureLoader.load( assetsRoot + 'concrete.jpg' );
     diffuseMap.wrapS = diffuseMap.wrapT = THREE.RepeatWrapping;
     diffuseMap.offset.set( 0, 0 );
     let lightMap = textureLoader.load( assetsRoot + 'room-02_lm.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
@@ -630,14 +658,6 @@ function setRoom_2(){
         envMap: mainEnv,
         envMapIntensity: 0.5,
         normalMap: concreteNormal
-    } );
-
-    let room_02_doors = new THREE.MeshStandardMaterial( {
-        //color: 0xff6f17,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.3,
     } );
 
     let room_02_frames = new THREE.MeshStandardMaterial( {
@@ -680,25 +700,96 @@ function setRoom_2(){
         lightMapIntensity: 0.5,
         emissive: 0xffffff,
         emissiveIntensity: 10
+    } );*/
+
+    let aoMap = textureLoader.load( assetsRoot + 'room-02/room-02_lm.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    aoMap.encoding = THREE.sRGBEncoding;
+
+    let floorMaterial = new THREE.MeshStandardMaterial( {
+        color: 0x19021c,
+        roughnessMap: concreteRough,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: concreteNormal,
+        aoMap: aoMap,
+        aoMapIntensity: 1,
+        lightMap: aoMap,
+        lightMapIntensity: 20,
+        //map: diffuseMap
+    } );
+
+    let colsMat = new THREE.MeshStandardMaterial( {
+        color: 0x33042F,
+        roughnessMap: concreteRough,
+        envMap: mainEnv,
+        envMapIntensity: 0.2,
+        normalMap: concreteNormal,
+        aoMap: aoMap,
+        aoMapIntensity: 1,
+        lightMap: aoMap,
+        lightMapIntensity: 1,
+        //map: diffuseMap
+    } );
+
+    let wallMaterial = new THREE.MeshStandardMaterial( {
+        color: 0x19021c,
+        aoMap: aoMap,
+        aoMapIntensity: 1,
+        lightMap: aoMap,
+        lightMapIntensity: 20,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        roughnessMap: wallRoughness,
+        roughness: 1,
+        normalMap: wallNormal,
+        normalScale: new THREE.Vector3( 0.25, 0.25 )
+        //map: diffuseMap
+    } );
+
+    let tubesMat = new THREE.MeshStandardMaterial( {
+        color: 0x19021c,
+        lightMapIntensity: 20,
+        lightMap: aoMap,
+        aoMap: aoMap,
+        roughness: 0.3,
+    } );
+
+    let lightMaterial = new THREE.MeshStandardMaterial( {
+        color: 0xffffff,
+        emissive: 0xffffff,
+        emissiveIntensity: 1,
+        //map: diffuseMap
+    } );
+
+    let framesMat = new THREE.MeshStandardMaterial( {
+        //color: 0x19021c,
+        lightMapIntensity: 20,
+        lightMap: aoMap,
+        aoMap: aoMap,
+        roughness: 0.3,
+    } );
+
+    let doorsMat = new THREE.MeshStandardMaterial( {
+        //color: 0x19021c,
+        lightMapIntensity: 20,
+        lightMap: aoMap,
+        aoMap: aoMap,
+        roughness: 0.3,
     } );
 
 
-    fbxLoader.load( assetsRoot + 'room-02.fbx', function ( object ) {
+    fbxLoader.load( assetsRoot + 'room-02/room-02.fbx', function ( object ) {
 
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
-                //console.log(child);
-                if(child.name === "floor")child.material = room_02_floor;
-                //if(child.name === "cover")child.material = room_02_floor;
-                if(child.name === "wall_debris" || child.name === "cover")child.material = room_02_walls;
-                if(child.name === "doors_code")child.material = room_02_doors;
-                if(child.name === "frames")child.material = room_02_frames;
-                if(child.name === "baseboard")child.material = room_02_baseboard;
-                if(child.name === "ceil")child.material = room_02_ceil;
-                if(child.name === "lights")child.material = room_02_light;
-
-                //child.receiveShadow = true;
+                if(child.name === "floor-ceil") child.material = floorMaterial;
+                if(child.name === 'cols') child.material = colsMat;
+                if(child.name === 'walls') child.material = wallMaterial;
+                if(child.name === 'tubes') child.material = tubesMat;
+                if(child.name === 'lights') child.material = lightMaterial;
+                if(child.name === 'frames') child.material = framesMat;
+                if(child.name === 'doors') child.material = doorsMat;
             }
 
         } );
@@ -730,7 +821,7 @@ function setRoom_2(){
         envMapIntensity: 0,
     } );
 
-    fbxLoader.load( assetsRoot + 'room-02-assets.fbx', function ( object ) {
+    fbxLoader.load( assetsRoot + 'room-02/room-02-assets.fbx', function ( object ) {
 
         object.traverse( function ( child ) {
 
@@ -748,7 +839,7 @@ function setRoom_2(){
 
     } );
 
-    let idleAnim;
+    /*let idleAnim;
 
     let body_lm = textureLoader.load( assetsRoot + 'char-02-lm.jpg' );
     let body_char_02 = new THREE.MeshPhongMaterial({
@@ -787,10 +878,12 @@ function setRoom_2(){
         action.play();;
         scene.add( object );
         //scene.add( room_2_char );
-    } );
+    } );*/
 
     diffuseMap = textureLoader.load( assetsRoot + 'plant_diff.png' );
+    diffuseMap.encoding = THREE.sRGBEncoding;
     assetsPBRMap = textureLoader.load( assetsRoot + 'plant_pbr.png' );
+    assetsPBRMap.encoding = THREE.sRGBEncoding;
     //let normalMap = textureLoader.load( assetsRoot + 'plant_norm.png' );
 
     let plant_mat = new THREE.MeshStandardMaterial( {
@@ -808,7 +901,7 @@ function setRoom_2(){
     plant_mat.transparent = true;
     plant_mat.side = THREE.DoubleSide;
     plant_mat.alphaTest = 0.5;
-    fbxLoader.load( assetsRoot + 'plant.fbx', function ( object ) {
+    fbxLoader.load( assetsRoot + 'room-02/plant.fbx', function ( object ) {
 
         object.traverse( function ( child ) {
 
@@ -818,7 +911,17 @@ function setRoom_2(){
 
         } );
         //object.position.x += 400;
+
+        object.position.x = -474.714;
+        object.position.y = -350;
+        object.position.z = 89.556;
+        object.rotation.y = 1.5708;
         scene.add( object );
+
+        let plant2 = object.clone();
+        plant2.position.z = -201.676;
+        plant2.rotation.y = 0;
+        scene.add( plant2 );
 
     } );
 
@@ -895,6 +998,24 @@ function setRoom_02Loader(){
     };
 
     loadingManager_r2.onLoad =  () => {
+        room_02_character = CharacterInstancer.instanceCharacter('bruce');
+        room_02_animation_idle = CharacterInstancer.getAnimation('room-02-pose');
+
+        mixer_room_02 = new THREE.AnimationMixer( room_02_character );
+        action_room_02['room-02-pose'] = mixer_room_02.clipAction(room_02_animation_idle);
+
+        //console.log(room_01_animation_append.tracks);
+        //room_01_animation_append.tracks.splice(39, 1);
+        action_room_02['room-02-pose'].play();
+        scene.add( room_02_character );
+        room_02_character.position.y = -350;
+        room_02_character.position.z = -48.191;
+        room_02_character.position.x = 144.265;
+        room_02_character.rotation.y = 1.59;
+        room_02_character.scale.x = room_02_character.scale.y = room_02_character.scale.z = 1.1;
+
+        head_room_02_bone = CharacterInstancer.setMouseFollower(room_02_character, 'CC_Base_Head', 'room-02');
+
         console.log('Loading room 02 completed');
         $('#web-btn').removeClass('invisible');
         $('#web-service').removeClass('d-none');
@@ -995,7 +1116,7 @@ function updateCamera(move){
             camera.position.x = newPosX;
             camera.position.y = newPosY;
             camera.position.z = newPosZ;
-            console.log("web");
+            //console.log("web");
         }
     //}
 
@@ -1028,6 +1149,7 @@ function animate() {
             y = mY + Math.sin(idleStore) * idleRadius;
 
             CharacterInstancer.moveHead('CC_Base_Head','room-01', 30, followMouse().x-400, followMouse().y-500);
+            CharacterInstancer.moveHead('CC_Base_Head','room-02', 60, followMouse().x-200, followMouse().y-500);
 
         }
 
@@ -1039,7 +1161,9 @@ function animate() {
 
         let delta = clock.getDelta();
         if ( mixer_room_01 ) mixer_room_01.update( delta );
-        if ( mixer_b ) mixer_b.update( delta );
+        if ( mixer_room_02 ) mixer_room_02.update( delta );
+
+        //if ( mixer_b ) mixer_b.update( delta );
 
         scene.rotation.y += idleSensibility * ( targetX - scene.rotation.y );
         scene.rotation.x += idleSensibility * ( targetY - scene.rotation.x );
@@ -1134,7 +1258,7 @@ function restoreState(){
     action_room_01['room-01-pose-append'].fadeOut( 0.5 );
     action_room_01['room-01-pose']
         .reset()
-        .fadeIn( 1 )
+        .fadeIn( 0.5 )
         .play();
 }
 

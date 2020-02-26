@@ -38,7 +38,7 @@ let setMouseFollower = function(character, bone, room){
     character.traverse( function ( child ) {
         if (child.isBone) {
             if (child.name === bone) {
-                console.log(child);
+                //console.log(child);
                 mouseBone[room + '_' + bone] = child;
             }
         }
