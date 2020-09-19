@@ -8,6 +8,7 @@ function setHtmlDisplay(){
     $('.home-headline').css({top: window.innerHeight - headlineHeight});
     setheadlineAnim();
     setAboutAnim();
+    setWebDevAnim();
 }
 
 
@@ -37,6 +38,15 @@ function setAboutAnim(){
         //.setTween("#about-description", {left: -30})
         .setTween("#about-hdl-01", {opacity: 1})
         .setPin("#about")
+        //.addIndicators({name: "1 (duration: 500)"}) // add indicators (requires plugin)
+        .addTo(controller);
+}
+
+function setWebDevAnim(){
+    new ScrollMagic.Scene({triggerElement: "#web-service", duration: 1000, triggerHook: 0})
+        //.setTween("#about-description", {left: -30})
+        .setTween("#web-hdl", {opacity: 1})
+        .setPin("#web-service")
         //.addIndicators({name: "1 (duration: 500)"}) // add indicators (requires plugin)
         .addTo(controller);
 }

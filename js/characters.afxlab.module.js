@@ -20,6 +20,7 @@ let loadCharacter = function(setup, loadingManager){
                 child.geometry.attributes.uv2 = child.geometry.attributes.uv;
                 child.castShadow = !!setup.castShadow;
                 child.receiveShadow = !!setup.receiveShadow;
+                child.frustumCulled = false;
             }
             mainCharacter[setup.name] = character;
         });
@@ -119,6 +120,9 @@ function setMaterial(root, envMap, childName, newMap, loadingManager){
                     break;
                 case 'std':
                     material.push(new  THREE.MeshStandardMaterial(materialData));
+                    break;
+                case 'basic':
+                    material.push(new  THREE.MeshBasicMaterial(materialData));
                     break;
             }
         })

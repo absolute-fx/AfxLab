@@ -260,7 +260,7 @@ section h3 {
   font-family: "Julius Sans One", sans-serif;
   font-size: 1.5em; }
 
-#about-hdl-01 {
+#about-hdl-01, #web-hdl {
   opacity: 0;
   font-family: "Anton", sans-serif;
   font-size: 30px;
@@ -287,7 +287,8 @@ section h3 {
   background-color: rgba(35, 36, 39, 0.8);
   border: 4px solid white;
   padding: 10px;
-  border-radius: 10px; }
+  border-radius: 10px;
+  margin-bottom: 60px; }
 
 .web-infos:after, .arrow_box:before {
   top: 100%;
@@ -310,6 +311,10 @@ section h3 {
   border-top-color: white;
   border-width: 36px;
   margin-left: -36px; }
+
+#erp-service {
+  height: 100vh;
+  padding-top: 25vh; }
 
 .overlay {
   z-index: 999;

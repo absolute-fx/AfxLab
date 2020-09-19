@@ -7,9 +7,9 @@ import { THREEx } from '../js/threex.afxlab.module.js';
 import * as CharacterInstancer from '../js/characters.afxlab.module.js';
 
 let container;
-let loadingManager_r1, loadingManager_r2;
+let loadingManager_r1, loadingManager_r2, loadingManager_r3;
 let camera, scene, renderer, ambientLight, pointLight, pointLight2, pointLight3, pointLight4, composer;
-let room_02_Light, room_02_Light_2, room_02_Light_3, room_02_Light_4;
+let room_02_Light, room_02_Light_2, room_02_Light_3, room_02_Light_4, room_02_Light_5;
 let mX, mY;
 let mixer_room_01, mixer_room_02, mixer_b;
 let mouseX = 0;
@@ -26,10 +26,10 @@ let tweenPos, tweenRot;
 let lastScrollTop = 0;
 let actualPos = 0;
 const duration = 2000;
-const camPositions = [
+/*const camPositions = [
     {x:450 , y:150,  z:209},
     {x:0 , y:50,  z:300}
-];
+];*/
 let inTransition = false;
 let clock = new THREE.Clock();
 
@@ -41,6 +41,13 @@ let idleStore = 0;
 let neck, waist, neck_r2, waist_r2;
 let head_room_01_bone, head_room_02_bone;
 let rendering = true;
+
+let room2_sphere;
+let room3_loaded = false;
+
+const colorsScene_1 = {floor: 0x19021c, wall: 0x19021c, socle: 0x000000, arches: 0x0b010c};
+//const colorsScene_2 = {floor: 0x19021c, ceil: 0x19021c, columns: 0x360431, walls: 0x19021c, tubes: 0x19021c, frames: 0x333333, doors: 0xdddddd, assets: 0x008CFF};
+const colorsScene_2 = {floor: 0x3A3A3A, ceil: 0xffffff, columns: 0x747474, walls: 0xffffff, tubes: 0xffffff, frames: 0x333333, doors: 0xdddddd, assets: 0x008CFF};
 
 const webSectionsPlates = {
     "plate-L-01": "PHP",
@@ -66,6 +73,10 @@ let action_room_02 = {};
 let room_01_animation_idle, room_01_animation_append, room_02_animation_idle;
 let room_01_happening = false;
 let mainCharSetup;
+
+let sectionsSizes = [];
+let sectionYPos = [];
+
 setNav();
 
 // LAYOUT >/////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,21 +209,21 @@ function init() {
     pointLight4.position.set( -275, 50, -50 );
     scene.add( pointLight4 );
 
-    room_02_Light = new THREE.PointLight( 0xffffff, 20, 5000 );
-    room_02_Light.position.set( -100, -250, -208);
+    room_02_Light = new THREE.PointLight( 0xffffff, 50, 5000 );
+    room_02_Light.position.set( 300, -250, -35);
     scene.add( room_02_Light );
-
-    room_02_Light_2 = new THREE.PointLight( 0xffffff, 20, 5000 );
-    room_02_Light_2.position.set( -300, -250, -208 );
-    scene.add( room_02_Light_2 );
-
-    room_02_Light_3 = new THREE.PointLight( 0xffffff, 20, 5000 );
-    room_02_Light_3.position.set( -100, -250, 115);
-    scene.add( room_02_Light_3 );
-
-    room_02_Light_4 = new THREE.PointLight( 0xffffff, 20, 5000 );
-    room_02_Light_4.position.set( -300, -250, 115 );
-    scene.add( room_02_Light_4 );
+    //
+    // room_02_Light_2 = new THREE.PointLight( 0xffffff, 20, 5000 );
+    // room_02_Light_2.position.set( -300, -250, -208 );
+    // scene.add( room_02_Light_2 );
+    //
+    // room_02_Light_3 = new THREE.PointLight( 0xffffff, 20, 5000 );
+    // room_02_Light_3.position.set( -100, -250, 115);
+    // scene.add( room_02_Light_3 );
+    //
+    // room_02_Light_4 = new THREE.PointLight( 0xffffff, 20, 5000 );
+    // room_02_Light_4.position.set( -300, -250, 115 );
+    // scene.add( room_02_Light_4 );
 
     /*var sphereSize = 10;
     var pointLightHelper = new THREE.PointLightHelper( room_02_Light, sphereSize );
@@ -252,25 +263,15 @@ function init() {
 
     $(window).scroll(function(event){
         let st = $(this).scrollTop();
-        if (st > lastScrollTop){
-            // downscroll code
-            //updateCamera('down');
-        } else {
-            //updateCamera('up');
-        }
-        lastScrollTop = st;
-
+        let i = 0;
         $('.navbar-nav a').each(function () {
             const currLink = $(this);
-            let refElement = $(currLink.data("href"));
-            const isSm = $(currLink).data('sm');
-            if(isSm) refElement = $(currLink.data("href")).parent();
-            if (refElement.position().top <= st && refElement.position().top + refElement.height() > st) {
+            if(st >= sectionYPos[i] && st < sectionYPos[i] + sectionsSizes[i]){
                 currLink.addClass("active");
-            }
-            else{
+            }else{
                 currLink.removeClass("active");
             }
+            i++;
         });
     });
 
@@ -287,7 +288,7 @@ function init() {
     raycaster_r1 = new THREE.Raycaster();
     mouse_over_char_room_01 = new THREE.Vector2();
     /*var sphereSize = 10;
-    var pointLightHelper = new THREE.PointLightHelper( pointLight4, sphereSize );
+    var pointLightHelper = new THREE.PointLightHelper( room_02_Light, sphereSize );
     scene.add( pointLightHelper );*/
 }
 
@@ -312,7 +313,7 @@ function setRoom_1(){
     wallRoughness.offset.set( 0, 0 );
 
     let wallMaterial = new THREE.MeshStandardMaterial( {
-        color: 0x19021c,
+        color: colorsScene_1.wall,
         aoMap: aoMap,
         aoMapIntensity: 1,
         lightMap: aoMap,
@@ -327,7 +328,7 @@ function setRoom_1(){
     } );
 
     let floorMaterial = new THREE.MeshStandardMaterial( {
-        color: 0x19021c,
+        color: colorsScene_1.floor,
         roughnessMap: concreteRough,
         envMap: mainEnv,
         envMapIntensity: 1,
@@ -340,7 +341,7 @@ function setRoom_1(){
     } );
 
     let socleMaterial = new THREE.MeshStandardMaterial( {
-        color: 0x000000,
+        color: colorsScene_1.socle,
         roughnessMap: concreteRough,
         envMap: mainEnv,
         envMapIntensity: 1,
@@ -353,7 +354,7 @@ function setRoom_1(){
     } );
 
     let archesMaterial = new THREE.MeshStandardMaterial( {
-        color: 0x0b010c,
+        color: colorsScene_1.arches,
         roughnessMap: concreteRough,
         envMap: mainEnv,
         envMapIntensity: 0.2,
@@ -616,6 +617,7 @@ function setRoom_1(){
 
 }
 
+/*
 function setRoom_2(){
     let textureLoader = new THREE.TextureLoader(loadingManager_r2);
     let fbxLoader = new FBXLoader(loadingManager_r2);
@@ -624,89 +626,24 @@ function setRoom_2(){
 
     new CharacterInstancer.loadAnimation('bruce', 'room-02-pose', loadingManager_r2);
 
-    /*diffuseMap = textureLoader.load( assetsRoot + 'concrete.jpg' );
-    diffuseMap.wrapS = diffuseMap.wrapT = THREE.RepeatWrapping;
-    diffuseMap.offset.set( 0, 0 );
-    let lightMap = textureLoader.load( assetsRoot + 'room-02_lm.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
-    let concreteRough = textureLoader.load( assetsRoot + 'concrete.jpg' );
-    concreteRough.wrapS = concreteRough.wrapT = THREE.RepeatWrapping;
-    concreteRough.offset.set( 0, 0 );
-    let concreteNormal = textureLoader.load( assetsRoot + 'concrete_normal.jpg' );
-    concreteNormal.wrapS = concreteNormal.wrapT = THREE.RepeatWrapping;
-    concreteNormal.offset.set( 0, 0 );
-
-    let room_02_floor = new THREE.MeshStandardMaterial( {
-        color: 0x740900,
-        //map: diffuseMap,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 1,
-        normalMap: concreteNormal
-    } );
-
-    let room_02_walls = new THREE.MeshStandardMaterial( {
-        color: 0x1c1c1c,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 0.5,
-        normalMap: concreteNormal
-    } );
-
-    let room_02_frames = new THREE.MeshStandardMaterial( {
-        color: 0x474747,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 1,
-        normalMap: concreteNormal,
-        metalnessMap: concreteRough
-    } );
-
-    let room_02_baseboard = new THREE.MeshStandardMaterial( {
-        color: 0x616161,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1,
-        roughness: 0.9,
-        roughnessMap: concreteRough,
-        envMap: mainEnv,
-        envMapIntensity: 1,
-        normalMap: concreteNormal,
-    } );
-
-    let room_02_ceil = new THREE.MeshStandardMaterial( {
-        color: 0x616161,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        lightMapIntensity: 1
-    } );
-
-    let room_02_light = new THREE.MeshBasicMaterial( {
-        //color: 0x616161,
-        lightMap: lightMap,
-        aoMap: lightMap,
-        aoMapIntensity: 0.5,
-        lightMapIntensity: 0.5,
-        emissive: 0xffffff,
-        emissiveIntensity: 10
-    } );*/
-
     let aoMap = textureLoader.load( assetsRoot + 'room-02/room-02_lm.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
     aoMap.encoding = THREE.sRGBEncoding;
 
     let floorMaterial = new THREE.MeshStandardMaterial( {
-        color: 0x19021c,
+        color: colorsScene_2.floor,
+        roughnessMap: concreteRough,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: concreteNormal,
+        aoMap: aoMap,
+        aoMapIntensity: 1,
+        lightMap: aoMap,
+        lightMapIntensity: 20,
+        //map: diffuseMap
+    } );
+
+    let ceilMaterial = new THREE.MeshStandardMaterial( {
+        color: colorsScene_2.ceil,
         roughnessMap: concreteRough,
         envMap: mainEnv,
         envMapIntensity: 1,
@@ -719,7 +656,7 @@ function setRoom_2(){
     } );
 
     let colsMat = new THREE.MeshStandardMaterial( {
-        color: 0x33042F,
+        color: colorsScene_2.columns,
         roughnessMap: concreteRough,
         envMap: mainEnv,
         envMapIntensity: 0.2,
@@ -732,7 +669,7 @@ function setRoom_2(){
     } );
 
     let wallMaterial = new THREE.MeshStandardMaterial( {
-        color: 0x19021c,
+        color: colorsScene_2.walls,
         aoMap: aoMap,
         aoMapIntensity: 1,
         lightMap: aoMap,
@@ -747,7 +684,7 @@ function setRoom_2(){
     } );
 
     let tubesMat = new THREE.MeshStandardMaterial( {
-        color: 0x19021c,
+        color: colorsScene_2.tubes,
         lightMapIntensity: 20,
         lightMap: aoMap,
         aoMap: aoMap,
@@ -761,20 +698,34 @@ function setRoom_2(){
         //map: diffuseMap
     } );
 
+    let metalMix = textureLoader.load(assetsRoot + 'metal_mix.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+
+    metalMix.wrapS = metalMix.wrapT = THREE.RepeatWrapping;
+    metalMix.offset.set( 0, 0 );
+    metalMix.encoding = THREE.sRGBEncoding;
+
     let framesMat = new THREE.MeshStandardMaterial( {
-        //color: 0x19021c,
+        color: colorsScene_2.frames,
+        envMap: mainEnv,
+        envMapIntensity: 1,
         lightMapIntensity: 20,
         lightMap: aoMap,
         aoMap: aoMap,
         roughness: 0.3,
+        roughnessMap: metalMix,
+        metalnessMap: metalMix
     } );
 
     let doorsMat = new THREE.MeshStandardMaterial( {
-        //color: 0x19021c,
+        color: colorsScene_2.doors,
+        envMap: mainEnv,
+        //envMapIntensity: 1,
         lightMapIntensity: 20,
         lightMap: aoMap,
         aoMap: aoMap,
         roughness: 0.3,
+        roughnessMap: metalMix,
+        metalnessMap: metalMix
     } );
 
 
@@ -783,7 +734,8 @@ function setRoom_2(){
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
-                if(child.name === "floor-ceil") child.material = floorMaterial;
+                if(child.name === "floor") child.material = floorMaterial;
+                if(child.name === "ceil") child.material = ceilMaterial;
                 if(child.name === 'cols') child.material = colsMat;
                 if(child.name === 'walls') child.material = wallMaterial;
                 if(child.name === 'tubes') child.material = tubesMat;
@@ -804,22 +756,28 @@ function setRoom_2(){
     let assetsPBRMap = textureLoader.load( assetsRoot + 'room-02_assets_pbr.png' );
 
     let room_02_assets = new THREE.MeshStandardMaterial( {
-        //color: 0x1a1515,
-        map: diffuseMap,
-        lightMap: lightMap,
-        aoMap: lightMap,
+        color: colorsScene_2.assets,
+        //map: diffuseMap,
+        //lightMap: lightMap,
+        //aoMap: lightMap,
+        emissive: colorsScene_2.assets,
+        //emissiveIntensity: .5,
         //roughnessMap: assetsPBRMap,
-        roughness: 1,
+        //roughness: 1,
         //metalnessMap: assetsPBRMap,
         //metalness: 1,
-        aoMapIntensity: 1,
-        lightMapIntensity: 1,
+        //aoMapIntensity: 1,
+        //lightMapIntensity: 1,
         //emissiveIntensity: 10,
         //emissiveMap: illuMap,
         //emissive: 0xffffff,
         //envMap: mainEnv,
-        envMapIntensity: 0,
+        //envMapIntensity: 0,
     } );
+
+    room_02_assets.transparent = true;
+    room_02_assets.opacity = 0.5;
+
 
     fbxLoader.load( assetsRoot + 'room-02/room-02-assets.fbx', function ( object ) {
 
@@ -829,7 +787,10 @@ function setRoom_2(){
                 if(child.name === "rooms-02-assets"){
                     child.material = room_02_assets;
                 }else{
-                    child.material = setPlateMaterial(lightMap, child.name);
+                    let plates = setPlateMaterial(lightMap, child.name);
+                    plates.transparent = true;
+                    plates.opacity = .5;
+                    child.material = plates;
                 }
             }
 
@@ -839,55 +800,12 @@ function setRoom_2(){
 
     } );
 
-    /*let idleAnim;
-
-    let body_lm = textureLoader.load( assetsRoot + 'char-02-lm.jpg' );
-    let body_char_02 = new THREE.MeshPhongMaterial({
-            map: body_lm
-        }
-
-    );
-    body_char_02.skinning = true;
-    fbxLoader.load( assetsRoot + 'sit.fbx', function ( object ) {
-
-        object.traverse( function ( child ) {
-
-            if ( child.isMesh ) {
-                if(child.name === 'Body') {
-                    child.material = body_char_02;
-                }
-            }
-            if (child.isBone) {
-                if (child.name === 'mixamorig_Head') {
-                    neck_r2 = child;
-                }
-                if (child.name === 'mixamorigSpine') {
-                    waist_r2 = child;
-                }
-            }
-
-        } );
-
-        mixer_b = new THREE.AnimationMixer( object );
-
-        idleAnim = object.animations[ 0 ];
-        idleAnim.tracks.splice(30, 3);
-        //idleAnim.tracks.splice(4, 1);
-        let action = mixer_b.clipAction(idleAnim);
-        //console.log(idleAnim);
-        action.play();;
-        scene.add( object );
-        //scene.add( room_2_char );
-    } );*/
-
     diffuseMap = textureLoader.load( assetsRoot + 'plant_diff.png' );
     diffuseMap.encoding = THREE.sRGBEncoding;
     assetsPBRMap = textureLoader.load( assetsRoot + 'plant_pbr.png' );
     assetsPBRMap.encoding = THREE.sRGBEncoding;
-    //let normalMap = textureLoader.load( assetsRoot + 'plant_norm.png' );
 
     let plant_mat = new THREE.MeshStandardMaterial( {
-        //color: 0x616161,
         map: diffuseMap,
         lightMap: assetsPBRMap,
         roughnessMap: assetsPBRMap,
@@ -924,6 +842,186 @@ function setRoom_2(){
         scene.add( plant2 );
 
     } );
+
+}
+*/
+
+function setRoom_2(){
+    let textureLoader = new THREE.TextureLoader(loadingManager_r2);
+    let fbxLoader = new FBXLoader(loadingManager_r2);
+    let diffuseMap;
+    let mixMap;
+    let normalMap;
+
+    new CharacterInstancer.loadAnimation('bruce', 'room-02-pose', loadingManager_r2);
+
+    diffuseMap = textureLoader.load( assetsRoot + 'room-02/rock_base.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    diffuseMap.encoding = THREE.sRGBEncoding;
+
+    mixMap = textureLoader.load( assetsRoot + 'room-02/rock_mix.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    mixMap.encoding = THREE.sRGBEncoding;
+
+    normalMap = textureLoader.load( assetsRoot + 'room-02/rock_normal.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+
+    let rootsMaterial = new THREE.MeshStandardMaterial( {
+        //color: diffuseMap,
+        roughnessMap: mixMap,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: normalMap,
+        aoMap: mixMap,
+        aoMapIntensity: 1,
+        map: diffuseMap
+    } );
+
+    fbxLoader.load( assetsRoot + 'room-02/rock.FBX', function ( object ) {
+        object.traverse( function ( child ) {
+            if ( child.isMesh ) {
+                child.material = rootsMaterial;
+            }
+        });
+        scene.add( object );
+    });
+
+    diffuseMap = textureLoader.load( assetsRoot + 'room-02/roots_base.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    diffuseMap.encoding = THREE.sRGBEncoding;
+
+    mixMap = textureLoader.load( assetsRoot + 'room-02/roots_mix.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    mixMap.encoding = THREE.sRGBEncoding;
+
+    normalMap = textureLoader.load( assetsRoot + 'room-02/roots_normal.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+
+    let rockMaterial = new THREE.MeshStandardMaterial( {
+        //color: diffuseMap,
+        roughnessMap: mixMap,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: normalMap,
+        aoMap: mixMap,
+        aoMapIntensity: 1,
+        map: diffuseMap
+    } );
+
+    fbxLoader.load( assetsRoot + 'room-02/roots.FBX', function ( object ) {
+        object.traverse( function ( child ) {
+            if ( child.isMesh ) {
+                child.material = rockMaterial;
+            }
+        });
+        scene.add( object );
+    });
+
+
+    let topMaterial = new THREE.MeshBasicMaterial( {
+        color: 0x050505,
+        flatShading: true
+    });
+
+
+
+    fbxLoader.load( assetsRoot + 'room-02/top.fbx', function ( object ) {
+        object.traverse( function ( child ) {
+            if ( child.isMesh ) {
+                child.material = topMaterial;
+            }
+        });
+        scene.add( object );
+    });
+
+    diffuseMap = textureLoader.load( assetsRoot + 'room-02/ground_erp.png', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    diffuseMap.encoding = THREE.sRGBEncoding;
+    let ground_erpMat = new THREE.MeshStandardMaterial( {
+        map: diffuseMap,
+        transparent: diffuseMap
+    } );
+
+    fbxLoader.load( assetsRoot + 'room-02/ground_erp.fbx', function ( object ) {
+        object.traverse( function ( child ) {
+            if ( child.isMesh ) {
+                child.material = ground_erpMat;
+            }
+        });
+        scene.add( object );
+    });
+
+}
+
+function setRoom_3() {
+    let textureLoader = new THREE.TextureLoader(loadingManager_r3);
+    let fbxLoader = new FBXLoader(loadingManager_r3);
+    let diffuseMap;
+    let mixMap;
+    let normalMap;
+
+    /*diffuseMap = textureLoader.load( assetsRoot + 'room-02/room-02-torus_base.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    diffuseMap.encoding = THREE.sRGBEncoding;*/
+
+    mixMap = textureLoader.load( assetsRoot + 'room-02/room-02-torus_mix.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+    mixMap.encoding = THREE.sRGBEncoding;
+
+    normalMap = textureLoader.load( assetsRoot + 'room-02/room-02-torus_normal.jpg', (texture) =>{texture.anisotropy = renderer.capabilities.getMaxAnisotropy()} );
+
+    let torusMat = new THREE.MeshStandardMaterial( {
+        //color: 0x221e22,
+        //map: diffuseMap,
+        roughnessMap: mixMap,
+        envMap: mainEnv,
+        envMapIntensity: 1,
+        normalMap: normalMap,
+        aoMap: mixMap,
+        aoMapIntensity: 1,
+        metalnessMap: mixMap,
+        metalness:0.75
+    } );
+
+    fbxLoader.load( assetsRoot + 'room-02/room-02-torus.fbx', function ( object ) {
+        object.traverse( function ( child ) {
+            if ( child.isMesh ) {
+                child.material = torusMat;
+            }
+        });
+        let t0 = object;
+        let t1 = t0.clone();
+        let t2 = t0.clone();
+        let t3 = t0.clone();
+        scene.add( t0 );
+        scene.add( t1 );
+        scene.add( t2 );
+        scene.add( t3 );
+        t1.rotation.y = 1.5708;
+        t2.rotation.y = t1.rotation.y + 1.5708;
+        t3.rotation.y = t2.rotation.y + 1.5708;
+
+        t0.position.x = t1.position.x = t2.position.x = t3.position.x =  138;
+        t0.position.y = t1.position.y = t2.position.y = t3.position.y =  -700;
+        t0.position.z = t1.position.z = t2.position.z = t3.position.z =  -30;
+
+    });
+
+    fbxLoader.load( assetsRoot + 'room-02/sphere.fbx', function ( object ) {
+        object.traverse( function ( child ) {
+            if ( child.isMesh ) {
+                //child.material.color = 0xffffff;
+                child.material.wireframe = true;
+                child.material.transparent = true;
+                child.material.opacity = 0.15;
+            }
+        });
+        room2_sphere = object;
+        scene.add( room2_sphere );
+        room2_sphere.position.x = 145;
+        room2_sphere.position.y = -645;
+        room2_sphere.position.z = -26;
+    });
+
+    /*fbxLoader.load( assetsRoot + 'room-02/wires.fbx', function ( object ) {
+        object.traverse( function ( child ) {
+            if ( child.isMesh ) {
+
+            }
+        });
+        scene.add( object );
+    });*/
 
 }
 
@@ -1018,8 +1116,20 @@ function setRoom_02Loader(){
 
         console.log('Loading room 02 completed');
         $('#web-btn').removeClass('invisible');
-        $('#web-service').removeClass('d-none');
+        $('#erp-btn').removeClass('invisible');
+        setRoom_03Loader()
     } ;
+}
+
+function setRoom_03Loader(){
+    loadingManager_r3 = new THREE.LoadingManager();
+    setRoom_3();
+    loadingManager_r3.onLoad =  () => {
+        console.log('Loading room 03 completed')
+        $('#web-service').removeClass('d-none');
+        $('#erp-service').removeClass('d-none');
+        room3_loaded = true;
+    }
 }
 //--> PRELOADERS
 
@@ -1028,17 +1138,19 @@ function setPlateMaterial(lightMap, name){
     let dynamicTexture = new THREEx.DynamicTexture(256, 256);
     dynamicTexture.context.font	= "bolder 50px Anton";
     dynamicTexture.texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    dynamicTexture.clear('#090909').drawText(webSectionsPlates[name], undefined, 150, '#b01c1c');
+    dynamicTexture.clear('#090909').drawText(webSectionsPlates[name], undefined, 150, '#ffffff');
 
     let plateMaterial = new THREE.MeshStandardMaterial( {
         //color: 0x1a1515,
         map: dynamicTexture.texture,
         lightMap: lightMap,
         aoMap: lightMap,
-        roughness: 1,
+        //roughness: 1,
         aoMapIntensity: 1,
         lightMapIntensity: 1,
-        envMapIntensity: 0,
+        envMapIntensity: 20,
+        emissiveMap: dynamicTexture.texture,
+        emissive: 0xffffff
     } );
     return plateMaterial;
 }
@@ -1066,69 +1178,119 @@ function onWindowResize() {
 
 }
 
-let a_distance = {x:0 , y:-100, z: -200};
-let a_LA_Distance = {x:0 , y:0, z: 50};
+let camPositions = [
+    {x:450 , y:150,  z:209},
+    {x:450 , y:50,  z:9},
+    {x:290 , y:-250,  z:-590},
+    {x:650 , y:-560,  z:-126}
+];
 
-let b_distance = {x:200 , y:-250, z: -75};
-let b_LA_Distance = {x:0 , y:-300, z: -135};
+let camTargetPositions = [
+    { x: 0, y:110, z:85 },
+    { x: 0, y:110, z:135 },
+    { x: 200, y:-300, z:0 },
+    { x: 200, y:-610, z:0 }
+];
 
-function updateCamera(move){
-    //console.log(move);
-    let maxYScrollScene_a = window.innerHeight / 2;
+//let resetCamPos2 = {x:650 , y:-250,  z:-126};
+let resetCamPos2 = {x:290 , y:-250,  z:-590};
 
-    let scopeB_pos = {x: camPositions[0].x, y: camPositions[0].y + a_distance.y, z: camPositions[0].z + a_distance.z};
-    let startYScrollScene_b = $("#launch").height() + $("#about").parent().height();
-    let maxYScrollScene_b = startYScrollScene_b + $("#web-service").height();
-    let b_scrollPix = $("#web-service").height();
+let sectionSizeFound = false;
 
-    let newPosX;
-    let newPosY;
-    let newPosZ;
-    let newLookAtX;
-    let newLookAtY;
-    let newLookAtZ;
+function updateCamera(){
+    let starts = [];
+    let stops = [];
+    starts.push(0);
+    stops.push(sectionsSizes[0]);
 
-    //if(move === "up" && window.scrollY === 0){
-        // hack jquery
-    //}else{
-        if(window.scrollY < maxYScrollScene_a){
-            //console.log("A scope");
-            newPosZ = camPositions[0].z + (window.scrollY * a_distance.z)/maxYScrollScene_a;
-            newPosY = camPositions[0].y + (window.scrollY * a_distance.y)/maxYScrollScene_a;
-            newLookAtZ = lookAtInit.z + (window.scrollY * a_LA_Distance.z)/maxYScrollScene_a;
-
-            camera.position.z = newPosZ;
-            camera.position.y = newPosY;
-            camera.lookAt( lookAtInit.x, lookAtInit.y, newLookAtZ );
-            //console.log("launch - About");
-        }
-        if(window.scrollY > startYScrollScene_b && window.scrollY < maxYScrollScene_b + 100){
-            //console.log("B scope");
-            //console.log(window.scrollY - startYScrollScene_b);
-            newPosX = camPositions[0].x + ((window.scrollY - startYScrollScene_b) * b_distance.x)/b_scrollPix;
-            newPosZ = scopeB_pos.z + ((window.scrollY - startYScrollScene_b) * b_distance.z)/b_scrollPix;
-            newPosY = scopeB_pos.y + ((window.scrollY - startYScrollScene_b) * b_distance.y)/b_scrollPix;
-            newLookAtX = (lookAtInit.x + a_LA_Distance.x)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.x)/b_scrollPix;
-            newLookAtY = (lookAtInit.y + a_LA_Distance.y)+ ((window.scrollY - startYScrollScene_b) * b_LA_Distance.y)/b_scrollPix;
-            newLookAtZ = (lookAtInit.z + a_LA_Distance.z) + ((window.scrollY - startYScrollScene_b) * b_LA_Distance.z)/b_scrollPix;
-            camera.lookAt( newLookAtX, newLookAtY, newLookAtZ );
-
-            camera.position.x = newPosX;
-            camera.position.y = newPosY;
-            camera.position.z = newPosZ;
-            //console.log("web");
-        }
-    //}
-
-
-
-    /*
-    if(e.deltaY === -100){
-        camY += 1;
-    }else{
-        camY -= 1;
+    if(window.scrollY < stops[0]){
+        console.log('launch to about');
+        moveCam(0, starts[0], stops[0]);
     }
-    */
+
+    starts.push(sectionYPos[1]);
+    stops.push(starts[1] + (sectionsSizes[1] *.5));
+    if(window.scrollY > starts[1] && window.scrollY < stops[1] ){
+        console.log('about pause');
+        camera.position.x =  camPositions[1].x;
+        camera.position.y =  camPositions[1].y;
+        camera.position.z =  camPositions[1].z;
+        camera.lookAt( camTargetPositions[1].x, camTargetPositions[1].y, camTargetPositions[1].z );
+        camPositions[2].x = resetCamPos2.x;
+        camPositions[2].z = resetCamPos2.z;
+    }
+
+    starts.push(sectionYPos[2] - (sectionsSizes[1] *.5));
+    stops.push(sectionYPos[2]);
+    if(window.scrollY > starts[2]  && window.scrollY < stops[2] ){
+        console.log('about to web');
+        moveCam(1, starts[2], stops[2]);
+    }
+
+    starts.push(sectionYPos[2]);
+    stops.push(sectionYPos[2] + (sectionsSizes[2] *.5));
+    if(window.scrollY > starts[3]  && window.scrollY < stops[3] ){
+        console.log('web pause');
+        camera.position.x =  camPositions[2].x;
+        camera.position.y =  camPositions[2].y;
+        camera.position.z =  camPositions[2].z;
+        camera.lookAt( camTargetPositions[2].x, camTargetPositions[2].y, camTargetPositions[2].z );
+    }
+
+    starts.push(stops[3]);
+    stops.push(sectionYPos[2] + sectionsSizes[2]);
+    if(window.scrollY > starts[4]  && window.scrollY < stops[4] ){
+        console.log('web to erp');
+        moveCam(2, starts[4], stops[4], true);
+    }
+
+    if($("#about").parent().position().top > 0 && !sectionSizeFound){
+        sectionSizeFound = true;
+        getSectionsSize();
+    }
+}
+
+function moveCam(i, start, stop, circle){
+    let xMove = getCameraTranslation(camPositions[i].x, camPositions[(i+1)].x);
+    let yMove = getCameraTranslation(camPositions[i].y, camPositions[(i+1)].y);
+    let zMove = getCameraTranslation(camPositions[i].z, camPositions[(i+1)].z);
+    console.log(camPositions[(i+1)].z);
+    let totalPixMove = stop - start;
+    if(!circle){
+        camera.position.x =  camPositions[i].x + ((window.scrollY - start) * xMove) / totalPixMove;
+        camera.position.z =  camPositions[i].z + ((window.scrollY - start) * zMove) / totalPixMove;
+    }else{
+        let val = 0.025;
+        camera.position.x = camera.position.x * Math.cos(((window.scrollY - start) * val) / totalPixMove) + camera.position.z * Math.sin(((window.scrollY - start) * val) / totalPixMove);
+        camPositions[2].x = camera.position.x;
+        camera.position.z = camera.position.z * Math.cos(((window.scrollY - start) * val) / totalPixMove) - camera.position.x * Math.sin(((window.scrollY - start) * val) / totalPixMove);
+        camPositions[2].z = camera.position.z;
+
+    }
+    camera.position.y =  camPositions[i].y + ((window.scrollY - start) * yMove) / totalPixMove;
+
+    let xTargetMove = getCameraTranslation(camTargetPositions[i].x, camTargetPositions[(i+1)].x);
+    let lookAtX = camTargetPositions[i].x + ((window.scrollY - start) * xTargetMove) / totalPixMove;
+
+    let yTargetMove = getCameraTranslation(camTargetPositions[i].y, camTargetPositions[(i+1)].y);
+    let lookAtY = camTargetPositions[i].y + ((window.scrollY - start) * yTargetMove) / totalPixMove;
+
+    let zTargetMove = getCameraTranslation(camTargetPositions[i].z, camTargetPositions[(i+1)].z);
+    let lookAtZ = camTargetPositions[i].z + ((window.scrollY - start) * zTargetMove) / totalPixMove;
+
+    camera.lookAt( lookAtX, lookAtY, lookAtZ);
+}
+
+function getCameraTranslation(a, b){
+    let move;
+    if(a > b){
+        move = 0 - (a - b);
+    }else if(a < b){
+        move = b - a;
+    }else{
+        move = 0;
+    }
+    return move;
 }
 
 function animate() {
@@ -1178,6 +1340,10 @@ function animate() {
     }else{
         //console.log('anim click = false');
         updateCamera();
+    }
+
+    if(room3_loaded){
+        room2_sphere.rotation.y += 0.01;
     }
 
     raycaster_r1.setFromCamera( mouse_over_char_room_01, camera );
@@ -1283,4 +1449,17 @@ function followMouse() {
         }
     }
     return {x: xT, y: yT}
+}
+
+function getSectionsSize(){
+    let yPos = 0;
+    $('section').each(function(){
+        sectionsSizes.push($(this).closest('.section-container').height());
+        sectionYPos.push(yPos);
+        yPos += $(this).closest('.section-container').height();
+    });
+    console.log("sectionsSizes");
+    console.log(sectionsSizes);
+    console.log("sectionYPos");
+    console.log(sectionYPos);
 }
