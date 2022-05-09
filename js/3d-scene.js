@@ -377,7 +377,7 @@ function setRoom_1(){
 
     let fbxLoader = new FBXLoader(loadingManager_r1);
     fbxLoader.load( assetsRoot + 'room-01-main.fbx', function ( object ) {
-
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 if(child.name === 'room-01') child.material = wallMaterial;
@@ -486,6 +486,7 @@ function setRoom_1(){
     } );
 
     fbxLoader.load(assetsRoot + 'rocket.fbx', function(object){
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
@@ -501,6 +502,7 @@ function setRoom_1(){
     });
 
     fbxLoader.load(assetsRoot + 'wires.fbx', function(object){
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
@@ -519,6 +521,7 @@ function setRoom_1(){
     } );
 
     fbxLoader.load(assetsRoot + 'tubes.fbx', function(object){
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
@@ -556,6 +559,7 @@ function setRoom_1(){
     } );
 
     fbxLoader.load(assetsRoot + 'electrical_box.fbx', function(object){
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
@@ -596,6 +600,7 @@ function setRoom_1(){
     });
 
     fbxLoader.load(assetsRoot + 'control-panel.fbx', function(object){
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
@@ -875,6 +880,7 @@ function setRoom_2(){
     } );
 
     fbxLoader.load( assetsRoot + 'room-02/rock.FBX', function ( object ) {
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.material = rootsMaterial;
@@ -903,6 +909,7 @@ function setRoom_2(){
     } );
 
     fbxLoader.load( assetsRoot + 'room-02/roots.FBX', function ( object ) {
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.material = rockMaterial;
@@ -920,6 +927,7 @@ function setRoom_2(){
 
 
     fbxLoader.load( assetsRoot + 'room-02/top.fbx', function ( object ) {
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.material = topMaterial;
@@ -936,6 +944,7 @@ function setRoom_2(){
     } );
 
     fbxLoader.load( assetsRoot + 'room-02/ground_erp.fbx', function ( object ) {
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.material = ground_erpMat;
@@ -975,6 +984,7 @@ function setRoom_3() {
     } );
 
     fbxLoader.load( assetsRoot + 'room-02/room-02-torus.fbx', function ( object ) {
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.material = torusMat;
@@ -999,6 +1009,7 @@ function setRoom_3() {
     });
 
     fbxLoader.load( assetsRoot + 'room-02/sphere.fbx', function ( object ) {
+        object.traverse(obj => obj.frustumCulled = false);
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 //child.material.color = 0xffffff;

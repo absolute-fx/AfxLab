@@ -14,6 +14,7 @@ let loadCharacter = function(setup, loadingManager){
     let modelPath = path + 'T-pose.fbx';
     let fbxLoader = new FBXLoader(loadingManager);
     fbxLoader.load( modelPath, function ( character ) {
+        character.traverse(obj => obj.frustumCulled = false);
         character.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.material = setMaterial(path, setup.envMap, child.name, setup[child.name], loadingManager);
@@ -36,6 +37,7 @@ let loadAnimation = function(name, animation, loadingManager){
 };
 
 let setMouseFollower = function(character, bone, room){
+    character.traverse(obj => obj.frustumCulled = false);
     character.traverse( function ( child ) {
         if (child.isBone) {
             if (child.name === bone) {
